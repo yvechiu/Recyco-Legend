@@ -59,6 +59,29 @@ async function checkpoint(page: Page, overrides: Record<string, unknown> = {}) {
   await page.goto('/');
   await page.getByRole('button', { name: '繼續冒險', exact: true }).click();
 }
+async function pickForestItem(page: Page, name: string, touch = false) {
+  const b = page.getByRole('button', { name: `撿起${name}`, exact: true });
+  if (touch) await b.tap();
+  else await b.click();
+  await expect(page.getByRole('button', { name: `選取${name}`, exact: true })).toBeVisible({
+    timeout: 20000,
+  });
+}
+async function sortForestItem(page: Page, id: string, value: string, touch = false) {
+  const b = page.getByRole('button', { name: `${value}回收價值`, exact: true });
+  if (touch) await b.tap();
+  else await b.click();
+  await expect
+    .poll(
+      () =>
+        page.evaluate(({ key, id }) => JSON.parse(localStorage.getItem(key)!).sorted.includes(id), {
+          key: storageKey,
+          id,
+        }),
+      { timeout: 20000 },
+    )
+    .toBe(true);
+}
 async function learning(page: Page) {
   await page.getByRole('button', { name: '瑞賽可村', exact: true }).click();
   for (const name of ['⌂ 收集站的村民', '↻ 忙碌的回收員', '❧ 村落的耆老'])
@@ -89,7 +112,7 @@ async function bossWin(page: Page, keyboard = false) {
 test('complete fresh playthrough, corrective feedback, nine items, boss victory and wish', async ({
   page,
 }) => {
-  test.setTimeout(120000);
+  test.setTimeout(180000);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   const failedAssets: string[] = [];
@@ -125,13 +148,10 @@ test('complete fresh playthrough, corrective feedback, nine items, boss victory 
   await page.getByRole('button', { name: '解開封印 →' }).click();
   await page.getByRole('button', { name: '走進森林，開始清理 →' }).click();
   await page.getByRole('button', { name: '已了解，準備好了！' }).click();
-  for (const item of wasteItems)
-    await page.getByRole('button', { name: `撿起${item.name}`, exact: true }).click();
+  for (const item of wasteItems) await pickForestItem(page, item.name);
   for (const [i, item] of wasteItems.entries()) {
     await page.getByRole('button', { name: `選取${item.name}`, exact: true }).click();
-    await page
-      .getByRole('button', { name: `${i === 0 ? '低' : item.value}回收價值`, exact: true })
-      .click();
+    await sortForestItem(page, item.id, i === 0 ? '低' : item.value);
     if (i === 0) await expect(page.getByRole('status')).toContainText('扣一條生命');
   }
   await expect(page.getByRole('heading', { name: '你讓森林重新呼吸了。' })).toBeVisible();
@@ -171,15 +191,17 @@ test('boss defeat, replay HP reset, and button victory', async ({ page }) => {
 test('forest loses three lives, retry preserves goddess quest, reload resumes backpack', async ({
   page,
 }) => {
+  test.setTimeout(180000);
   await checkpoint(page, { cleaned: false, collected: [], sorted: [], scene: 'ForestCleanup' });
   await page.getByRole('button', { name: '已了解，準備好了！' }).click();
   for (const item of wasteItems.slice(0, 3)) {
-    await page.getByRole('button', { name: `撿起${item.name}`, exact: true }).click();
-    await page.getByRole('button', { name: '低回收價值', exact: true }).click();
+    await pickForestItem(page, item.name);
+    await sortForestItem(page, item.id, '低');
   }
   await expect(page.getByRole('heading', { name: '森林還在等你，再試一次吧。' })).toBeVisible();
   await page.getByRole('button', { name: '重新清理森林', exact: true }).click();
-  await page.getByRole('button', { name: '撿起寶特瓶', exact: true }).click();
+  await page.getByRole('button', { name: '已了解，準備好了！' }).click();
+  await pickForestItem(page, '寶特瓶');
   await page.reload();
   await page.getByRole('button', { name: '繼續冒險', exact: true }).click();
   await page.getByRole('button', { name: '已了解，準備好了！' }).click();
@@ -390,11 +412,12 @@ test('mobile cleanup touch targets, backpack, sorting and original clue image', 
     deviceScaleFactor: 1,
   });
   const page = await context.newPage();
+  test.setTimeout(180000);
   await checkpoint(page, { cleaned: false, collected: [], sorted: [], scene: 'ForestCleanup' });
   await page.getByRole('button', { name: '已了解，準備好了！' }).tap();
   for (const item of wasteItems) {
-    await page.getByRole('button', { name: `撿起${item.name}`, exact: true }).tap();
-    await page.getByRole('button', { name: `${item.value}回收價值`, exact: true }).tap();
+    await pickForestItem(page, item.name, true);
+    await sortForestItem(page, item.id, item.value, true);
   }
   await expect(page.getByRole('heading', { name: '你讓森林重新呼吸了。' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
@@ -490,4 +513,176 @@ test('production assets and original art load from a static deployment subpath',
   } finally {
     await new Promise<void>((done, reject) => server.close((err) => (err ? reject(err) : done())));
   }
+});
+
+import {
+  FOREST,
+  forestItems,
+  forestBins,
+  terrain,
+  walkable,
+  sameCell,
+  type Cell,
+} from '../src/game/data/forestMap';
+import { findPath, adjacentCells } from '../src/game/systems/GridNavigation';
+async function prepareWalking(page: Page) {
+  await checkpoint(page, { cleaned: false, collected: [], sorted: [], scene: 'ForestCleanup' });
+  await page.getByRole('button', { name: '已了解，準備好了！' }).click();
+}
+async function walkKeyboard(page: Page, from: Cell, to: Cell) {
+  const path = findPath(from, [to]);
+  expect(path).not.toBeNull();
+  let current = from;
+  for (const next of path!) {
+    const key =
+      next.x > current.x
+        ? 'ArrowRight'
+        : next.x < current.x
+          ? 'ArrowLeft'
+          : next.y > current.y
+            ? 'ArrowDown'
+            : 'ArrowUp';
+    await page.keyboard.press(key);
+    await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', `${next.x},${next.y}`);
+    current = next;
+  }
+}
+test('walking forest: arrow movement, nearby Space pickup, tree and water collision, exit', async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await prepareWalking(page);
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '2,9');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '3,9');
+  await page.keyboard.press('Space');
+  await expect(page.getByRole('button', { name: '選取紙飲料杯', exact: true })).toBeVisible();
+  await page.keyboard.press('ArrowUp');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '3,8');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '3,8');
+  await expect(page.locator('#forest-prompt')).toContainText('障礙物');
+  await walkKeyboard(page, { x: 3, y: 8 }, { x: 9, y: 2 });
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '9,2');
+  await expect(page.locator('#forest-prompt')).toContainText('障礙物');
+  // At a bin, Space deposits only a selected item and uses the same life/progress rules.
+  await walkKeyboard(page, { x: 9, y: 2 }, { x: 2, y: 3 });
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Space');
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        JSON.parse(localStorage.getItem('recyco-legend-v1')!).sorted.includes('paper-cup'),
+      ),
+    )
+    .toBe(true);
+  await page.screenshot({ path: '/tmp/recyco-walking-desktop.png', fullPage: true });
+  await walkKeyboard(page, { x: 2, y: 3 }, { x: 2, y: 10 });
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('heading', { name: '循環島', exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('forest navigation routes all nine items and bins without crossing blocked terrain', () => {
+  expect(terrain).toHaveLength(FOREST.rows);
+  expect(terrain.every((r) => r.length === FOREST.columns)).toBe(true);
+  for (const target of [...Object.values(forestItems), ...Object.values(forestBins)]) {
+    const path = findPath(FOREST.spawn, adjacentCells(target));
+    expect(path).not.toBeNull();
+    let current: Cell = FOREST.spawn;
+    for (const step of path!) {
+      expect(walkable(step)).toBe(true);
+      expect(Math.abs(step.x - current.x) + Math.abs(step.y - current.y)).toBe(1);
+      current = step;
+    }
+  }
+  expect(walkable({ x: 4, y: 8 })).toBe(false);
+  expect(walkable({ x: 9, y: 3 })).toBe(false);
+  expect(walkable({ x: 10, y: 6 })).toBe(false);
+  expect(walkable({ x: -1, y: 0 })).toBe(false);
+  expect(findPath(FOREST.spawn, [{ x: 9, y: 3 }])).toBeNull();
+  expect(sameCell(FOREST.spawn, FOREST.exit)).toBe(false);
+});
+
+test('walking forest: held direction releases, modal and blur stop input, scene re-entry cleans controls', async ({
+  page,
+}) => {
+  await prepareWalking(page);
+  await page.keyboard.down('ArrowRight');
+  await expect.poll(() => page.locator('#stage').getAttribute('data-player-cell')).not.toBe('2,9');
+  await page.keyboard.up('ArrowRight');
+  await expect(page.locator('#stage')).toHaveAttribute('data-moving', 'false');
+  const stopped = await page.locator('#stage').getAttribute('data-player-cell');
+  await page.waitForTimeout(350);
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', stopped!);
+  await page.getByRole('button', { name: '玩法說明 ?' }).click();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', stopped!);
+  await page.getByRole('button', { name: '知道了', exact: true }).click();
+  await page.locator('#stage').focus();
+  await page.keyboard.down('ArrowRight');
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect(page.locator('#stage')).toHaveAttribute('data-moving', 'false');
+  const blurred = await page.locator('#stage').getAttribute('data-player-cell');
+  await page.waitForTimeout(350);
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', blurred!);
+  await page.keyboard.up('ArrowRight');
+  await page.getByRole('button', { name: '↗ 地圖', exact: true }).click();
+  await page.getByRole('button', { name: '廢棄森林', exact: true }).click();
+  await page.getByRole('button', { name: '走進森林，開始清理 →' }).click();
+  await page.getByRole('button', { name: '已了解，準備好了！' }).click();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '3,9');
+});
+
+test('mobile walking: touch direction pad and interact, no drift after release', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await prepareWalking(page);
+  await page.getByRole('button', { name: '向右移動', exact: true }).tap();
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '3,9');
+  await expect(page.locator('#stage')).toHaveAttribute('data-moving', 'false');
+  await page.getByRole('button', { name: '互動 ␣', exact: true }).tap();
+  await expect(page.getByRole('button', { name: '選取紙飲料杯', exact: true })).toBeVisible();
+  await page.waitForTimeout(350);
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '3,9');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: '/tmp/recyco-walking-mobile.png', fullPage: true });
+  await context.close();
+});
+
+test('walking replay preserves clues and canvas click walks to an item before pickup', async ({
+  page,
+}) => {
+  await checkpoint(page, { scene: 'IslandMap', ending: 'good', wish: '守護森林' });
+  await page.getByRole('button', { name: '重玩森林步行關', exact: true }).click();
+  await page.getByRole('button', { name: '已了解，準備好了！' }).click();
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!));
+  expect(saved.q1 && saved.q2 && saved.unlocked).toBe(true);
+  expect(saved.ending).toBeNull();
+  expect(saved.collected).toEqual([]);
+  expect(saved.wish).toBe('守護森林');
+  const stage = page.locator('#stage');
+  await stage.scrollIntoViewIfNeeded();
+  const box = (await stage.boundingBox())!;
+  // Initial camera is clamped to x=-48, y=376. Pudding is at world (416,608).
+  await page.mouse.click(
+    box.x + ((416 + 48) / 1200) * box.width,
+    box.y + ((608 - 376) / 440) * box.height,
+  );
+  await expect(page.getByRole('button', { name: '選取布丁杯', exact: true })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(stage).toHaveAttribute('data-player-cell', '5,9');
 });

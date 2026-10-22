@@ -116,6 +116,7 @@ export function resetForest(): void {
   state.sorted = [];
   state.lives = BALANCE.forestLives;
   state.cleaned = false;
+  state.ending = null;
   persist();
 }
 export function objective(): string {

@@ -1766,3 +1766,187 @@ dialog img {
     top: 35% !important;
   }
 }
+
+/* Walking prototype: Phaser world, camera-follow and accessible DOM controls. */
+#stage.walking-stage {
+  outline-offset: -4px;
+  touch-action: manipulation;
+  background: #355d43;
+}
+.walking-stage .cleanup-status {
+  left: 14px;
+  right: auto;
+  top: 12px;
+  pointer-events: none !important;
+}
+.forest-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none !important;
+}
+.forest-controls button {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.forest-dpad {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  display: grid;
+  grid-template: repeat(3, 38px) / repeat(3, 40px);
+  gap: 3px;
+  pointer-events: none;
+}
+.walk-direction {
+  background: #fff9e9ed;
+  color: #325640;
+  border: 1px solid #bccca8;
+  border-radius: 7px;
+  box-shadow: 0 3px 0 #23443155;
+  font-size: 23px;
+  line-height: 1;
+  min-width: 40px;
+  min-height: 38px;
+  padding: 0;
+}
+.walk-direction.up {
+  grid-area: 1/2;
+}
+.walk-direction.left {
+  grid-area: 2/1;
+}
+.walk-direction.down {
+  grid-area: 2/2;
+}
+.walk-direction.right {
+  grid-area: 2/3;
+}
+.forest-interact {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  background: #f1dca6f2;
+  color: #2e543d;
+  border: 2px solid #bba66c;
+  box-shadow: 0 4px 0 #23443166;
+  border-radius: 50%;
+  width: 76px;
+  height: 76px;
+  padding: 8px;
+  font-size: 14px;
+}
+.forest-prompt {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  max-width: 52%;
+  background: #fffbeded;
+  color: #36583c;
+  border: 1px solid #c3cdaa;
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 7px 13px;
+  text-align: center;
+  pointer-events: none !important;
+}
+.forest-minimap {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  background: #fff9e7e8;
+  padding: 5px;
+  border-radius: 6px;
+  border: 1px solid #b5c59c;
+  width: 118px;
+  pointer-events: none !important;
+}
+.forest-minimap svg {
+  display: block;
+  width: 100%;
+  image-rendering: pixelated;
+}
+.forest-minimap span {
+  display: block;
+  font-size: 8px;
+  color: #436346;
+  text-align: center;
+  line-height: 1.5;
+}
+.forest-search {
+  margin: 22px 0;
+  background: #f1f3e8;
+  border: 1px solid #dbe2ce;
+  border-radius: 8px;
+  padding: 12px 15px;
+}
+.forest-search summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #57734a;
+}
+.forest-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+@media (max-width: 700px) {
+  #stage.walking-stage {
+    aspect-ratio: auto;
+    height: 350px;
+  }
+  .walking-stage .cleanup-status {
+    top: 9px;
+    left: 9px;
+    gap: 5px;
+  }
+  .walking-stage .cleanup-status .chip {
+    font-size: 9px;
+    padding: 4px 7px;
+  }
+  .forest-minimap {
+    width: 84px;
+    right: 9px;
+    top: 9px;
+    padding: 4px;
+  }
+  .forest-prompt {
+    left: 10px;
+    top: 49px;
+    transform: none;
+    max-width: calc(100% - 112px);
+    font-size: 10px;
+    text-align: left;
+    padding: 6px 8px;
+  }
+  .forest-dpad {
+    left: 10px;
+    bottom: 8px;
+    grid-template: repeat(3, 42px) / repeat(3, 42px);
+    gap: 3px;
+  }
+  .walk-direction {
+    min-width: 42px;
+    min-height: 42px;
+  }
+  .forest-interact {
+    width: 70px;
+    height: 70px;
+    right: 13px;
+    bottom: 29px;
+    font-size: 12px;
+  }
+  .forest-search {
+    padding: 10px;
+    margin: 18px 0;
+  }
+  .forest-search summary {
+    font-size: 11px;
+  }
+  .forest-targets {
+    gap: 6px;
+  }
+}

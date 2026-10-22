@@ -1,6 +1,6 @@
 import { AdventureScene } from './AdventureScene';
 import { $, el, button, titleBlock, actions, feedback } from '../components/UI';
-import { state, objective } from '../systems/SaveSystem';
+import { state, objective, resetForest } from '../systems/SaveSystem';
 import type { SceneId } from '../data/types';
 export class IslandMap extends AdventureScene {
   constructor() {
@@ -104,6 +104,19 @@ export class IslandMap extends AdventureScene {
       panel.append(
         actions(button('查看已取得的線索', () => this.go('ForestEntrance'), 'secondary')),
       );
-    if (state.cleaned) panel.append(actions(button('挑戰廢棄怪 →', () => this.go('BossBattle'))));
+    if (state.cleaned)
+      panel.append(
+        actions(
+          button('挑戰廢棄怪 →', () => this.go('BossBattle')),
+          button(
+            '重玩森林步行關',
+            () => {
+              resetForest();
+              this.go('ForestCleanup');
+            },
+            'light',
+          ),
+        ),
+      );
   }
 }
