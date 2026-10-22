@@ -1950,3 +1950,258 @@ dialog img {
     gap: 6px;
   }
 }
+
+/* Village residents and their conversations. All NPC art is implementation art. */
+.village-status {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  pointer-events: none !important;
+}
+.village-status .chip {
+  background: #fff9e5e8;
+}
+.npc-directory {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 24px 0;
+}
+.npc-card {
+  padding: 18px;
+  background: #f0f1e4;
+  border: 1px solid #d8dfc8;
+  border-radius: 10px;
+}
+.npc-card.visited {
+  border-color: #a9bf93;
+  background: #eaf0de;
+}
+.npc-card-info {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.npc-portrait {
+  width: 58px;
+  height: 74px;
+  display: block;
+  flex: none;
+  image-rendering: pixelated;
+}
+.npc-card h3 {
+  font-family: 'Noto Serif TC', 'PMingLiU', serif;
+  font-size: 21px;
+}
+.npc-card-info p {
+  font-size: 11px;
+  color: #738066;
+}
+.npc-card .button {
+  width: 100%;
+}
+.npc-visit-mark {
+  display: block;
+  font-size: 10px;
+  margin-top: 10px;
+  color: #758567;
+  text-align: center;
+}
+.village-journal {
+  padding-top: 16px;
+  border-top: 1px solid #e0e4d2;
+}
+.village-journal > h3 {
+  font-size: 17px;
+  margin-bottom: 15px;
+}
+.village-entry {
+  background: #f3f1e4;
+  border: 1px solid #e1e2ce;
+  border-radius: 7px;
+  padding: 12px 17px;
+  margin-bottom: 10px;
+}
+.village-entry summary {
+  font-size: 12px;
+  cursor: pointer;
+  color: #4b704e;
+}
+.village-entry p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: #69765b;
+  margin-top: 12px;
+}
+.village-journal > .inventory-empty {
+  padding: 10px 0;
+}
+.npc-dialog {
+  max-width: 700px;
+  width: calc(100% - 36px);
+  padding: 26px 30px;
+  border: 2px solid #b7c296;
+  border-radius: 14px;
+  background: #fffbed;
+  box-shadow: 0 15px 70px #163f3655;
+}
+.npc-dialog::backdrop {
+  background: #1d3f335c;
+  backdrop-filter: blur(2px);
+}
+.npc-dialog-header {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  border-bottom: 1px solid #dfdfc5;
+  padding-bottom: 16px;
+}
+.npc-dialog-header .npc-portrait {
+  width: 60px;
+  height: 76px;
+  background: #e8ebd5;
+  border-radius: 9px;
+}
+.npc-dialog-header h2 {
+  font-size: 27px;
+}
+.npc-dialog-header > .chip {
+  margin-left: auto;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.npc-dialog-header .eyebrow {
+  font-size: 10px;
+}
+.npc-dialog .npc-speech {
+  font-size: 18px;
+  line-height: 2;
+  min-height: 125px;
+  margin: 22px 0;
+  color: #3f5f43;
+  white-space: pre-line;
+}
+.npc-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.npc-reply {
+  justify-content: flex-start;
+  text-align: left;
+}
+.npc-dialog-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+.npc-dialog-footer .eyebrow {
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+.npc-cancel {
+  margin-top: 18px;
+}
+@media (max-width: 700px) {
+  .village-status {
+    left: 9px;
+    top: 9px;
+  }
+  .village-status .chip {
+    font-size: 10px;
+  }
+  .npc-directory {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 19px;
+  }
+  .npc-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 5px 10px;
+    padding: 12px 14px;
+  }
+  .npc-card-info {
+    gap: 10px;
+    margin-bottom: 0;
+  }
+  .npc-card-info > .npc-portrait {
+    width: 42px;
+    height: 54px;
+  }
+  .npc-card h3 {
+    font-size: 18px;
+  }
+  .npc-card .button {
+    align-self: center;
+    padding: 10px 13px;
+    font-size: 12px;
+  }
+  .npc-card-info p {
+    font-size: 10px;
+  }
+  .npc-card-info .eyebrow {
+    font-size: 8px;
+    margin-bottom: 0;
+  }
+  .npc-visit-mark {
+    grid-column: 1/-1;
+    margin-top: 0;
+    text-align: right;
+    font-size: 9px;
+  }
+  .village-entry {
+    padding: 11px 13px;
+  }
+  .village-entry p {
+    font-size: 12px;
+  }
+  .npc-dialog {
+    padding: 18px;
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
+    border-radius: 11px;
+  }
+  .npc-dialog-header {
+    gap: 11px;
+    padding-bottom: 13px;
+  }
+  .npc-dialog-header .npc-portrait {
+    width: 43px;
+    height: 58px;
+  }
+  .npc-dialog-header h2 {
+    font-size: 23px;
+  }
+  .npc-dialog-header .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.02em;
+  }
+  .npc-dialog-header > .chip {
+    font-size: 8px;
+    padding: 4px 6px;
+  }
+  .npc-dialog .npc-speech {
+    font-size: 15px;
+    line-height: 1.95;
+    min-height: 125px;
+    margin: 18px 0;
+  }
+  .npc-reply {
+    font-size: 12px;
+    padding: 12px;
+  }
+  .npc-dialog-footer {
+    flex-wrap: wrap;
+  }
+  .npc-dialog-footer .npc-next {
+    margin-left: auto;
+    min-width: 135px;
+  }
+  .npc-cancel {
+    font-size: 11px;
+  }
+}

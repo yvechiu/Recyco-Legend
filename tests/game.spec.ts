@@ -1,4 +1,18 @@
 import { test, expect, type Page } from '@playwright/test';
+async function meetVillager(page: Page, name: string, touch = false) {
+  const visit = page.getByRole('button', { name: `和${name}交談`, exact: true });
+  if (touch) await visit.tap();
+  else await visit.click();
+  const dialog = page.locator('#npc-dialog');
+  await expect(dialog).toBeVisible({ timeout: 15000 });
+  if (touch) await dialog.locator('.npc-reply').first().tap();
+  else await dialog.locator('.npc-reply').first().click();
+  for (let i = 0; i < 8 && (await dialog.isVisible()); i++) {
+    if (touch) await dialog.locator('.npc-next').tap();
+    else await dialog.locator('.npc-next').click();
+  }
+  await expect(dialog).not.toBeVisible();
+}
 async function start(page: Page, name = '小樹') {
   await page.goto('/');
   await page.getByLabel('勇士的名字').fill(name);
@@ -8,13 +22,13 @@ async function start(page: Page, name = '小樹') {
   await page.getByRole('button', { name: '收下地圖，出發 →', exact: true }).click();
 }
 test('vertical slice: identity, story, map, village discovery, saved result', async ({ page }) => {
+  test.setTimeout(90000);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await start(page);
   await expect(page.getByRole('heading', { name: '循環島', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '瑞賽可村', exact: true }).click();
-  for (const name of ['⌂ 收集站的村民', '↻ 忙碌的回收員', '❧ 村落的耆老'])
-    await page.getByRole('button', { name, exact: true }).click();
+  for (const name of ['阿禾', '阿青', '榕伯']) await meetVillager(page, name);
   await expect(page.getByRole('status')).toContainText('已完成村落探索');
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!).visitedVillage),
@@ -84,8 +98,7 @@ async function sortForestItem(page: Page, id: string, value: string, touch = fal
 }
 async function learning(page: Page) {
   await page.getByRole('button', { name: '瑞賽可村', exact: true }).click();
-  for (const name of ['⌂ 收集站的村民', '↻ 忙碌的回收員', '❧ 村落的耆老'])
-    await page.getByRole('button', { name, exact: true }).click();
+  for (const name of ['阿禾', '阿青', '榕伯']) await meetVillager(page, name);
   await page.getByRole('button', { name: '前往焚山 →' }).click();
   for (const name of ['☼ 廢氣／燃燒熱能', '≈ 廢水', '◇ 底渣', '⋰ 飛灰'])
     await page.getByRole('button', { name, exact: true }).click();
@@ -112,7 +125,8 @@ async function bossWin(page: Page, keyboard = false) {
 test('complete fresh playthrough, corrective feedback, nine items, boss victory and wish', async ({
   page,
 }) => {
-  test.setTimeout(180000);
+  // Three full NPC conversations add real walking and dialogue actions to this end-to-end run.
+  test.setTimeout(240000);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   const failedAssets: string[] = [];
@@ -363,7 +377,7 @@ test.describe('mobile touch', () => {
     await page.screenshot({ path: '/tmp/recyco-mobile-boss.png', fullPage: true });
     await page.getByRole('button', { name: '↗ 地圖', exact: true }).tap();
     await page.getByRole('button', { name: '瑞賽可村', exact: true }).tap();
-    await page.getByRole('button', { name: '⌂ 收集站的村民', exact: true }).tap();
+    await meetVillager(page, '阿禾', true);
     await expect(page.getByText(/先把生活垃圾「收集」起來/)).toBeVisible();
     expect(errors).toEqual([]);
   });
@@ -685,4 +699,186 @@ test('walking replay preserves clues and canvas click walks to an item before pi
     timeout: 15000,
   });
   await expect(stage).toHaveAttribute('data-player-cell', '5,9');
+});
+
+import { villageNpcs, villageWalkable, villageTerrain, VILLAGE } from '../src/game/data/village';
+const newVillage = {
+  visitedVillage: false,
+  visitedIncinerator: false,
+  q1: false,
+  q2: false,
+  unlocked: false,
+  cleaned: false,
+  collected: [],
+  sorted: [],
+  ending: null,
+  scene: 'Village',
+};
+async function walkVillageKeyboard(page: Page, from: Cell, to: Cell) {
+  const path = findPath(from, [to], villageWalkable);
+  expect(path).not.toBeNull();
+  let current = from;
+  for (const next of path!) {
+    await page.keyboard.press(
+      next.x > current.x
+        ? 'ArrowRight'
+        : next.x < current.x
+          ? 'ArrowLeft'
+          : next.y > current.y
+            ? 'ArrowDown'
+            : 'ArrowUp',
+    );
+    await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', `${next.x},${next.y}`);
+    current = next;
+  }
+}
+test('village NPC: walk nearby, finish dialogue to earn journal, cancel and reload preserve partial progress', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await checkpoint(page, newVillage);
+  await page.locator('#stage').focus();
+  await page.keyboard.press('Space');
+  await expect(page.getByRole('status')).toContainText('先走到村民身旁');
+  await expect(page.locator('#npc-dialog')).not.toBeVisible();
+  for (const cell of ['4,8', '4,7']) {
+    await page.keyboard.press('ArrowUp');
+    await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', cell);
+  }
+  await page.keyboard.press('ArrowUp');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '4,7');
+  await expect(page.locator('#village-prompt')).toContainText('障礙物');
+  await page.keyboard.press('Space');
+  const dialog = page.locator('#npc-dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: '阿禾', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!).villageTalks),
+  ).toEqual([]);
+  await page.keyboard.press('Space');
+  await dialog.locator('.npc-reply').first().click();
+  await dialog.locator('.npc-next').click();
+  await dialog.getByRole('button', { name: '先告辭，晚點再聊' }).click();
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!).villageTalks),
+  ).toEqual([]);
+  await page.keyboard.press('Space');
+  await dialog.locator('.npc-reply').last().focus();
+  await page.keyboard.press('Enter');
+  for (let i = 0; i < 4; i++) await page.keyboard.press('Enter');
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator('.npc-card.visited')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: '前往焚山 →', exact: true })).toHaveCount(0);
+  await page.reload();
+  await page.getByRole('button', { name: '繼續冒險', exact: true }).click();
+  await expect(page.locator('.npc-card.visited')).toHaveCount(1);
+  await expect(page.locator('.village-entry')).toContainText('收集');
+  await meetVillager(page, '阿禾');
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!).villageTalks),
+  ).toEqual(['collector']);
+  expect(errors).toEqual([]);
+});
+
+test('village: click canvas NPC walks to them, houses block movement, walking exit and scene cleanup work', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await checkpoint(page, newVillage);
+  const stage = page.locator('#stage');
+  await stage.scrollIntoViewIfNeeded();
+  const box = (await stage.boundingBox())!;
+  // Collector at (288,416), initial camera x=-48/y=376. Click the actual sprite body.
+  await page.mouse.click(box.x + (336 / 1200) * box.width, box.y + (28 / 440) * box.height);
+  await expect(page.locator('#npc-dialog')).toBeVisible({ timeout: 15000 });
+  await expect(stage).toHaveAttribute('data-player-cell', '4,7');
+  await page.screenshot({ path: '/tmp/recyco-npc-dialogue-desktop.png', fullPage: true });
+  await page.keyboard.press('Escape');
+  await walkVillageKeyboard(page, { x: 4, y: 7 }, { x: 4, y: 4 });
+  await page.keyboard.press('ArrowUp');
+  await expect(stage).toHaveAttribute('data-player-cell', '4,4');
+  await expect(page.locator('#village-prompt')).toContainText('障礙物');
+  await page.screenshot({ path: '/tmp/recyco-village-desktop.png', fullPage: true });
+  await walkVillageKeyboard(page, { x: 4, y: 4 }, { x: 4, y: 10 });
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('heading', { name: '循環島', exact: true })).toBeVisible();
+  await expect(page.locator('#npc-dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: '瑞賽可村', exact: true }).click();
+  await page.locator('#stage').focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(stage).toHaveAttribute('data-player-cell', '4,8');
+});
+
+test('village legacy save keeps prior completion and restores all three resident journals', async ({
+  page,
+}) => {
+  await checkpoint(page, { scene: 'Village' });
+  await expect(page.locator('.village-status')).toContainText('3 / 3');
+  await expect(page.locator('.npc-card.visited')).toHaveCount(3);
+  await expect(page.locator('.village-entry')).toHaveCount(3);
+  await expect(page.getByRole('button', { name: '前往焚山 →', exact: true })).toBeVisible();
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!));
+  expect(saved.villageTalks).toEqual(['collector', 'recycler', 'elder']);
+  expect(saved.q1 && saved.q2 && saved.cleaned).toBe(true);
+});
+
+test('mobile village: direction pad and talk, choices fit and dialogue pauses movement', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 360, height: 800 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await checkpoint(page, newVillage);
+  for (const cell of ['4,8', '4,7']) {
+    await page.getByRole('button', { name: '向上移動', exact: true }).tap();
+    await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', cell);
+  }
+  await page.getByRole('button', { name: '交談 ␣', exact: true }).tap();
+  const dialog = page.locator('#npc-dialog');
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '4,7');
+  await dialog.locator('.npc-reply').last().tap();
+  await page.screenshot({ path: '/tmp/recyco-npc-dialogue-mobile.png', fullPage: true });
+  const bounds = (await dialog.boundingBox())!;
+  expect(bounds.width).toBeLessThanOrEqual(360);
+  expect(bounds.height).toBeLessThanOrEqual(800);
+  for (let i = 0; i < 4; i++) await dialog.locator('.npc-next').tap();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator('.npc-card.visited')).toHaveCount(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: '/tmp/recyco-village-mobile.png', fullPage: true });
+  await context.close();
+});
+
+test('village routes all residents, blocks houses and NPCs, and journals retain authored teaching topics', () => {
+  expect(villageTerrain.every((row) => row.length === VILLAGE.columns)).toBe(true);
+  expect(villageTerrain).toHaveLength(VILLAGE.rows);
+  expect(new Set(villageNpcs.map((n) => n.id)).size).toBe(3);
+  for (const npc of villageNpcs) {
+    expect(villageWalkable(npc.cell)).toBe(false);
+    const route = findPath(
+      VILLAGE.spawn,
+      adjacentCells(npc.cell, villageWalkable),
+      villageWalkable,
+    );
+    expect(route).not.toBeNull();
+    for (const p of route!) expect(villageWalkable(p)).toBe(true);
+    expect(npc.replies).toHaveLength(2);
+    expect(npc.provenance).toBe('adapted');
+  }
+  expect(villageWalkable({ x: 4, y: 3 })).toBe(false);
+  expect(villageWalkable({ x: 8, y: 5 })).toBe(false);
+  expect(findPath(VILLAGE.spawn, [VILLAGE.exit], villageWalkable)).not.toBeNull();
+  expect(villageNpcs[0].journal).toContain('分類與處理');
+  expect(villageNpcs[1].journal).toContain('回收價值不足');
+  expect(villageNpcs[2].journal).toContain('兩族');
 });

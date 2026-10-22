@@ -1,7 +1,11 @@
 import { directions, sameCell, walkable, type Cell } from '../data/forestMap';
 // Breadth-first paths never cut diagonally through water, trunks, bins or rocks.
 // Returns steps excluding the starting cell, null when no route exists.
-export function findPath(start: Cell, goals: Cell[]): Cell[] | null {
+export function findPath(
+  start: Cell,
+  goals: Cell[],
+  canWalk: (p: Cell) => boolean = walkable,
+): Cell[] | null {
   if (goals.some((g) => sameCell(g, start))) return [];
   const key = (p: Cell) => `${p.x},${p.y}`;
   const queue = [start],
@@ -10,7 +14,7 @@ export function findPath(start: Cell, goals: Cell[]): Cell[] | null {
     const current = queue[i];
     for (const delta of Object.values(directions)) {
       const next = { x: current.x + delta.x, y: current.y + delta.y };
-      if (!walkable(next) || previous.has(key(next))) continue;
+      if (!canWalk(next) || previous.has(key(next))) continue;
       previous.set(key(next), current);
       if (goals.some((g) => sameCell(g, next))) {
         const path: Cell[] = [];
@@ -26,8 +30,8 @@ export function findPath(start: Cell, goals: Cell[]): Cell[] | null {
   }
   return null;
 }
-export function adjacentCells(target: Cell): Cell[] {
+export function adjacentCells(target: Cell, canWalk: (p: Cell) => boolean = walkable): Cell[] {
   return Object.values(directions)
     .map((d) => ({ x: target.x + d.x, y: target.y + d.y }))
-    .filter(walkable);
+    .filter(canWalk);
 }

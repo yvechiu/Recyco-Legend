@@ -224,6 +224,7 @@ export class ForestCleanup extends AdventureScene {
     if (!this.inputReady()) return;
     this.held.clear();
     this.destination = exact ? { ...destination, action: this.groundAction } : destination;
+    $('#stage').scrollIntoView({ block: 'nearest', behavior: 'instant' });
     $('#stage').focus({ preventScroll: true });
     this.updatePrompt();
   }
@@ -481,6 +482,7 @@ export class ForestCleanup extends AdventureScene {
           button('已了解，準備好了！', () => {
             this.prepared = true;
             this.draw();
+            $('#stage').scrollIntoView({ block: 'nearest', behavior: 'instant' });
             $('#stage').focus({ preventScroll: true });
           }),
         ),

@@ -1,6 +1,7 @@
 import type { SavedState, SceneId } from '../data/types';
 import { BALANCE } from '../data/balance';
 import { wasteItems } from '../data/wasteItems';
+import { villageNpcs } from '../data/village';
 export const SAVE_KEY = 'recyco-legend-v1';
 export const freshState = (): SavedState => ({
   version: 1,
@@ -8,6 +9,7 @@ export const freshState = (): SavedState => ({
   hero: 0,
   intro: false,
   visitedVillage: false,
+  villageTalks: [],
   visitedIncinerator: false,
   q1: false,
   q2: false,
@@ -81,7 +83,18 @@ export function parseSave(raw: string | null): SavedState {
       (s.ending && !s.cleaned)
     )
       throw Error('Invalid progression');
-    return { ...freshState(), ...s };
+    // Version-1 saves predate per-NPC journals; preserve already-earned village credit.
+    const npcIds = villageNpcs.map((n) => n.id);
+    const talks =
+      s.villageTalks === undefined ? (s.visitedVillage ? [...npcIds] : []) : s.villageTalks;
+    if (
+      !Array.isArray(talks) ||
+      !talks.every((id) => npcIds.includes(id)) ||
+      new Set(talks).size !== talks.length ||
+      s.visitedVillage !== (talks.length === npcIds.length)
+    )
+      throw Error('Invalid village progress');
+    return { ...freshState(), ...s, villageTalks: talks };
   } catch {
     saveStatus = '舊版或損壞的進度已略過，可以安心開始新冒險。';
     return freshState();
