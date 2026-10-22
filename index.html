@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#163f36" />
+    <meta
+      name="description"
+      content="瑞賽可傳奇：探索循環島，解開湖中女神的難題，用分類的智慧拯救森林。"
+    />
+    <title>瑞賽可傳奇 · Recyco Legend</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="瑞賽可傳奇首頁"
+          ><span class="brand-mark">↻</span><span>瑞賽可傳奇<small>RECYCO LEGEND</small></span></a
+        >
+        <nav aria-label="遊戲選單">
+          <button id="home" class="nav-button">首頁</button
+          ><button id="help" class="nav-button">玩法說明 <span>?</span></button>
+        </nav>
+      </header>
+      <main id="game-shell">
+        <div id="hud"></div>
+        <section id="stage" aria-label="遊戲場景">
+          <div id="canvas-host" aria-hidden="true"></div>
+          <div id="stage-ui"></div>
+        </section>
+        <section id="panel" aria-label="遊戲操作"></section>
+        <div id="feedback" role="status" aria-live="polite"></div>
+      </main>
+      <footer class="page-footer">
+        <span>一場為循環島而戰的冒險</span><button id="source-note">原始企劃與分類提醒 ↗</button
+        ><span>原創企劃 © 邱郁棻</span>
+      </footer>
+    </div>
+    <dialog id="modal">
+      <div id="modal-body"></div>
+      <form method="dialog"><button class="button primary">知道了</button></form>
+    </dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
