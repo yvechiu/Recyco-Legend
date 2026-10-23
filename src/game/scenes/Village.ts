@@ -199,7 +199,7 @@ export class Village extends AdventureScene {
     this.closeDialogue();
     feedback(
       state.visitedVillage
-        ? '✓ 已完成村落探索！三位村民的手記已收好，可以前往焚山或克林湖。'
+        ? '✓ 已完成村落探索！三位村民的手記已收好，接著前往焚山收齊四份觀察紀錄，再到克林湖挑戰女神。'
         : `✓ 已記下${n.name}的分享（${state.villageTalks.length} / 3）。再找找其他村民吧！`,
       'good',
     );

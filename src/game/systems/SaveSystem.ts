@@ -130,6 +130,7 @@ export function parseSave(raw: string | null): SavedState {
       ...s,
       villageTalks: talks,
       incineratorNotes: notes,
+      visitedIncinerator: s.visitedIncinerator || notes.length === outputIds.length,
       mapHintUnlocked,
       lakeRepairs: repairs,
     };
@@ -173,10 +174,18 @@ export function resetForest(): void {
 export function objective(): string {
   if (!state.intro) return '接受國王的委託，成為循環島的勇士';
   if (!state.visitedVillage) return '前往瑞賽可村，向村民學習垃圾處理流程';
-  if (!state.visitedIncinerator) return '前往焚山，了解焚化後的四種產物';
+  if (!state.visitedIncinerator)
+    return `焚山紀錄 ${state.incineratorNotes.length} / 4：走近未完成的設備，記下觀察`;
   if (!state.q1 || !state.q2) return '前往克林湖，解開女神的兩道難題';
   if (!state.unlocked) return '拼湊兩個線索，解開廢棄森林入口';
   if (!state.cleaned) return '撿起九件垃圾，依回收價值分類';
   if (state.ending === 'good') return '循環島恢復美麗了！把分類的心意帶回生活';
   return '挑戰廢棄怪！用細分類守護循環島';
+}
+
+export function incineratorReminder(): string {
+  const missing = outputPairs
+    .filter((p) => !state.incineratorNotes.includes(p.id))
+    .map((p) => p.label);
+  return `焚山觀察紀錄 ${state.incineratorNotes.length} / 4，還缺：${missing.join('、')}。請到對應設備按「記下觀察」；收齊即可開始湖畔任務，不必完成工程師問答。`;
 }

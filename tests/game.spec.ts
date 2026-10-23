@@ -96,6 +96,17 @@ async function sortForestItem(page: Page, id: string, value: string, touch = fal
     )
     .toBe(true);
 }
+async function wrongForestSort(page: Page, value: string) {
+  const before = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('recyco-legend-v1')!).lives,
+  );
+  await page.getByRole('button', { name: `${value}回收價值`, exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!).lives), {
+      timeout: 20000,
+    })
+    .toBe(before - 1);
+}
 async function learning(page: Page) {
   await page.getByRole('button', { name: '瑞賽可村', exact: true }).click();
   for (const name of ['阿禾', '阿青', '榕伯']) await meetVillager(page, name);
@@ -175,8 +186,11 @@ test('complete fresh playthrough, corrective feedback, nine items, boss victory 
   for (const item of wasteItems) await pickForestItem(page, item.name);
   for (const [i, item] of wasteItems.entries()) {
     await page.getByRole('button', { name: `選取${item.name}`, exact: true }).click();
-    await sortForestItem(page, item.id, i === 0 ? '低' : item.value);
-    if (i === 0) await expect(page.getByRole('status')).toContainText('扣一條生命');
+    if (i === 0) {
+      await wrongForestSort(page, '低');
+      await expect(page.getByRole('status')).toContainText('仍留在背包');
+    }
+    await sortForestItem(page, item.id, item.value);
   }
   await expect(page.getByRole('heading', { name: '你讓森林重新呼吸了。' })).toBeVisible();
   await page.getByRole('button', { name: '準備好了，挑戰廢棄怪 →' }).click();
@@ -220,7 +234,7 @@ test('forest loses three lives, retry preserves goddess quest, reload resumes ba
   await page.getByRole('button', { name: '已了解，準備好了！' }).click();
   for (const item of wasteItems.slice(0, 3)) {
     await pickForestItem(page, item.name);
-    await sortForestItem(page, item.id, '低');
+    await wrongForestSort(page, '低');
   }
   await expect(page.getByRole('heading', { name: '森林還在等你，再試一次吧。' })).toBeVisible();
   await page.getByRole('button', { name: '重新清理森林', exact: true }).click();
@@ -936,7 +950,7 @@ test('station exploration: walking, cancellation, notes reload and corrective mi
     await observe(name);
     await page.getByRole('button', { name: '記下觀察 ✓', exact: true }).click();
   }
-  await expect(page.getByRole('button', { name: '前往克林湖 →', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '前往克林湖 →', exact: true })).toBeVisible();
   await observe('和工程師阿燦交談');
   await page.getByRole('button', { name: '燒完之後，所有垃圾都會消失', exact: true }).click();
   await expect(page.locator('#station-dialog [role=status]')).toContainText('再想想');
@@ -944,7 +958,7 @@ test('station exploration: walking, cancellation, notes reload and corrective mi
     await page.evaluate(
       () => JSON.parse(localStorage.getItem('recyco-legend-v1')!).visitedIncinerator,
     ),
-  ).toBe(false);
+  ).toBe(true);
   await page.getByRole('button', { name: '燃燒熱能可用於發電，廢氣仍須淨化', exact: true }).click();
   await expect(page.getByRole('button', { name: '前往克林湖 →', exact: true })).toBeVisible();
   expect(
@@ -1191,5 +1205,84 @@ test('lake legacy completion preserves map and missing prerequisite guides to st
   await expect(other.getByRole('button', { name: '前往焚山 →', exact: true })).toBeVisible();
   await other.getByRole('button', { name: '前往焚山 →', exact: true }).click();
   await expect(other.getByRole('heading', { name: '焚山觀察站', exact: true })).toBeVisible();
+  await context.close();
+});
+
+test('forest wrong last item stays in backpack after reload until player sorts correctly', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await checkpoint(page, {
+    scene: 'ForestCleanup',
+    cleaned: false,
+    collected: wasteItems.map((i) => i.id),
+    sorted: wasteItems.slice(0, 8).map((i) => i.id),
+    lives: 3,
+  });
+  await page.getByRole('button', { name: '已了解，準備好了！' }).click();
+  await page.getByRole('button', { name: '選取口罩', exact: true }).click();
+  await wrongForestSort(page, '高');
+  await expect(page.getByRole('button', { name: '選取口罩', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByRole('status')).toContainText('仍留在背包');
+  await expect(page.getByRole('heading', { name: '你讓森林重新呼吸了。' })).toHaveCount(0);
+  let save = await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!));
+  expect(save.sorted).toHaveLength(8);
+  expect(save.cleaned).toBe(false);
+  expect(save.lives).toBe(2);
+  await page.reload();
+  await page.getByRole('button', { name: '繼續冒險', exact: true }).click();
+  await page.getByRole('button', { name: '已了解，準備好了！' }).click();
+  await page.getByRole('button', { name: '選取口罩', exact: true }).click();
+  await sortForestItem(page, 'mask', '低');
+  await expect(page.getByRole('heading', { name: '你讓森林重新呼吸了。' })).toBeVisible();
+  save = await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!));
+  expect(save.sorted).toHaveLength(9);
+  expect(save.cleaned).toBe(true);
+  expect(save.lives).toBe(2);
+});
+
+test('station complete notes unlock lake without engineer, partial notes explain missing work', async ({
+  page,
+  browser,
+}) => {
+  await checkpoint(page, {
+    scene: 'Incinerator',
+    visitedIncinerator: false,
+    incineratorNotes: ['gas', 'water', 'bottom', 'fly'],
+    q2: false,
+    unlocked: false,
+    cleaned: false,
+    collected: [],
+    sorted: [],
+  });
+  await page.getByRole('button', { name: '前往克林湖 →', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '克林湖的循環裝置', exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem('recyco-legend-v1')!).visitedIncinerator,
+    ),
+  ).toBe(true);
+  const context = await browser.newContext();
+  const other = await context.newPage();
+  await checkpoint(other, {
+    scene: 'LakeGoddess',
+    visitedIncinerator: false,
+    incineratorNotes: ['gas', 'water', 'bottom'],
+    q2: false,
+    unlocked: false,
+    cleaned: false,
+    collected: [],
+    sorted: [],
+  });
+  await expect(other.locator('#panel')).toContainText('觀察紀錄 3 / 4，還缺：飛灰');
+  await other.getByRole('button', { name: '前往焚山 →', exact: true }).click();
+  await other.getByRole('button', { name: '⋰ 飛灰', exact: true }).click();
+  await expect(other.locator('#station-dialog')).toBeVisible({ timeout: 15000 });
+  await other.getByRole('button', { name: '記下觀察 ✓', exact: true }).click();
+  await other.getByRole('button', { name: '前往克林湖 →', exact: true }).click();
+  await expect(other.getByRole('heading', { name: '克林湖的循環裝置', exact: true })).toBeVisible();
   await context.close();
 });

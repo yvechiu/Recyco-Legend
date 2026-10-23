@@ -40,7 +40,9 @@ export class IslandMap extends AdventureScene {
       },
       {
         name: '焚山',
-        sub: '焚化之後呢？',
+        sub: state.visitedIncinerator
+          ? '四份紀錄已收齊'
+          : `觀察紀錄 ${state.incineratorNotes.length} / 4`,
         scene: 'Incinerator',
         x: 26,
         y: 74,
@@ -90,7 +92,7 @@ export class IslandMap extends AdventureScene {
     panel.append(titleBlock('勇士手記', `你好，${state.name}。`, objective()));
     const steps = el('ol', 'quest-steps');
     [
-      ['01', '探索村落', state.visitedVillage && state.visitedIncinerator],
+      ['01', '村莊與焚山探索', state.visitedVillage && state.visitedIncinerator],
       ['02', '女神的線索', state.q1 && state.q2],
       ['03', '還森林漂漂', state.cleaned],
       ['04', '守護循環島', state.ending === 'good'],

@@ -1,6 +1,6 @@
 import { AdventureScene } from './AdventureScene';
 import { $, el, button, actions, art, titleBlock, feedback } from '../components/UI';
-import { state, persist } from '../systems/SaveSystem';
+import { state, persist, incineratorReminder } from '../systems/SaveSystem';
 import { flowChoices, flowBranch, checkFlow } from '../data/quizQuestions';
 export class LakeGoddess extends AdventureScene {
   private question: 1 | 2 = 1;
@@ -148,7 +148,7 @@ export class LakeGoddess extends AdventureScene {
       );
       if (!state.visitedIncinerator) {
         panel.append(
-          el('p', 'fine-print', '女神：「先到焚山看完四種產物的導覽，再回來修復裝置吧！」'),
+          el('p', 'fine-print', incineratorReminder()),
           actions(button('前往焚山 →', () => this.go('Incinerator'))),
         );
         return;

@@ -476,7 +476,7 @@ export class ForestCleanup extends AdventureScene {
         el(
           'p',
           'item-guidance',
-          '回收價值受材質、分離難度與成本影響，不等於現行回收規則。本關分為高／中／低三種回收價值。選錯扣一條生命，仍會投入正確桶；三條命耗盡可重試並保留前一任務。',
+          '回收價值受材質、分離難度與成本影響，不等於現行回收規則。本關分為高／中／低三種回收價值。選錯扣一條生命，物品會留在背包，請參考提示重新分類；選對才計入完成。三條命耗盡可重試並保留前一任務。',
         ),
         actions(
           button('已了解，準備好了！', () => {
@@ -590,8 +590,10 @@ export class ForestCleanup extends AdventureScene {
       return;
     const correct = value === item.value;
     if (!correct) state.lives--;
-    state.sorted.push(item.id);
-    this.selected = null;
+    if (correct) {
+      state.sorted.push(item.id);
+      this.selected = null;
+    }
     if (state.sorted.length === 9 && state.lives > 0) state.cleaned = true;
     persist();
     const p = center(forestBins[value]);
@@ -599,7 +601,7 @@ export class ForestCleanup extends AdventureScene {
     feedback(
       correct
         ? `✓ ${item.name}分類成功！本關列為${item.value}回收價值。`
-        : `✕ 扣一條生命。在循環島上，${item.name}是${item.value}回收價值；已幫你放進正確的桶。`,
+        : `✕ 扣一條生命。${item.name}仍留在背包。${item.hint}請重新選擇分類桶。`,
       correct ? 'good' : 'bad',
     );
     this.draw();

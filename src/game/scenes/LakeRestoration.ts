@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { AdventureScene } from './AdventureScene';
 import { $, el, button, actions, titleBlock, feedback } from '../components/UI';
-import { state, persist, objective } from '../systems/SaveSystem';
+import { state, persist, objective, incineratorReminder } from '../systems/SaveSystem';
 import { WalkingController } from '../systems/WalkingController';
 import { LakeWorld } from '../components/LakeWorld';
 import { LAKE, lakeDevices, lakeMaterials, lakeWalkable } from '../data/lake';
@@ -24,7 +24,7 @@ export class LakeRestoration extends AdventureScene {
     this.setup('克林湖的循環裝置', '女神的第二道難題 · 讓湖水重新流動', 'lake');
     if (!state.visitedIncinerator) {
       $('#panel').append(
-        titleBlock('女神的提醒', '先去焚山觀察產物吧。', '了解四種產物的去向後，再回來修復裝置。'),
+        titleBlock('女神的提醒', '先去焚山觀察產物吧。', incineratorReminder()),
         actions(button('前往焚山 →', () => this.go('Incinerator'))),
       );
       return;

@@ -94,12 +94,19 @@ export class Incinerator extends AdventureScene {
         el('p', 'npc-speech', `${note.detail}。${note.note}`),
         button('記下觀察 ✓', () => {
           if (!state.incineratorNotes.includes(id)) state.incineratorNotes.push(id);
+          state.visitedIncinerator = observationPoints.every((p) =>
+            state.incineratorNotes.includes(p.id),
+          );
           persist();
+          const quest = document.querySelector('#hud .quest>span:last-child');
+          if (quest) quest.textContent = objective();
           this.world.syncProgress();
           this.close();
           this.render();
           feedback(
-            `✓ 已記下 ${state.incineratorNotes.length} / 4 種產物。收齊後找工程師完成現場任務。`,
+            state.visitedIncinerator
+              ? '✓ 四份觀察紀錄已收齊！可以直接前往克林湖；也能找工程師複習。'
+              : `✓ 已記下 ${state.incineratorNotes.length} / 4 種產物，再找找其餘設備吧。`,
             'good',
           );
         }),
@@ -121,12 +128,12 @@ export class Incinerator extends AdventureScene {
         el(
           'p',
           '',
-          `先到四個設備旁觀察，記下產物的去向，再回來找我吧！（${state.incineratorNotes.length} / 4）`,
+          `先到四個設備旁觀察，記下產物的去向，收齊後就能前往克林湖，也歡迎回來找我複習！（${state.incineratorNotes.length} / 4）`,
         ),
       );
       return;
     }
-    this.dialog.append(el('h3', '', '現場任務：哪一句可以寫進導覽手冊？'));
+    this.dialog.append(el('h3', '', '複習挑戰（可略過）：哪一句可以寫進導覽手冊？'));
     const result = el('p');
     result.setAttribute('role', 'status');
     this.dialog.append(result);
@@ -149,7 +156,7 @@ export class Incinerator extends AdventureScene {
             this.render();
             const quest = document.querySelector('#hud .quest>span:last-child');
             if (quest) quest.textContent = objective();
-            feedback('✓ 現場任務完成！帶著四份觀察紀錄，前往克林湖回答女神的配對題吧。', 'good');
+            feedback('✓ 複習答對了！你可以帶著四份紀錄，前往克林湖修復循環裝置。', 'good');
           },
           'light',
         ),
@@ -172,7 +179,7 @@ export class Incinerator extends AdventureScene {
       titleBlock(
         'INCINERATOR WALK · 焚山探索',
         '燒完以後，垃圾去了哪裡？',
-        '沿著參觀步道走近設備，按空白鍵觀察。也可以點下方按鈕自動走近；記下四份紀錄後，和工程師完成現場任務。',
+        '沿著參觀步道走近設備，按空白鍵觀察。也可以點下方按鈕自動走近；收齊四份紀錄就能前往克林湖，工程師問答可自由複習。',
       ),
     );
     panel.append(button('和工程師阿燦交談', () => this.visit('engineer'), 'light'));
