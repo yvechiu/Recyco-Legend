@@ -100,8 +100,14 @@ async function learning(page: Page) {
   await page.getByRole('button', { name: '瑞賽可村', exact: true }).click();
   for (const name of ['阿禾', '阿青', '榕伯']) await meetVillager(page, name);
   await page.getByRole('button', { name: '前往焚山 →' }).click();
-  for (const name of ['☼ 廢氣／燃燒熱能', '≈ 廢水', '◇ 底渣', '⋰ 飛灰'])
+  for (const name of ['☼ 廢氣／燃燒熱能', '≈ 廢水', '◇ 底渣', '⋰ 飛灰']) {
     await page.getByRole('button', { name, exact: true }).click();
+    await expect(page.locator('#station-dialog')).toBeVisible({ timeout: 15000 });
+    await page.getByRole('button', { name: '記下觀察 ✓', exact: true }).click();
+  }
+  await page.getByRole('button', { name: '和工程師阿燦交談', exact: true }).click();
+  await expect(page.locator('#station-dialog')).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: '燃燒熱能可用於發電，廢氣仍須淨化', exact: true }).click();
   await page.getByRole('button', { name: '前往克林湖 →' }).click();
 }
 async function bossWin(page: Page, keyboard = false) {
@@ -881,4 +887,90 @@ test('village routes all residents, blocks houses and NPCs, and journals retain 
   expect(villageNpcs[0].journal).toContain('分類與處理');
   expect(villageNpcs[1].journal).toContain('回收價值不足');
   expect(villageNpcs[2].journal).toContain('兩族');
+});
+
+test('station exploration: walking, cancellation, notes reload and corrective mission', async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await checkpoint(page, {
+    scene: 'Incinerator',
+    visitedIncinerator: false,
+    incineratorNotes: [],
+    q2: false,
+    unlocked: false,
+    cleaned: false,
+    collected: [],
+    sorted: [],
+  });
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '8,9');
+  await page.locator('#stage').scrollIntoViewIfNeeded();
+  await page.locator('#stage').focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '8,8', {
+    timeout: 15000,
+  });
+  const observe = async (name: string) => {
+    await page.getByRole('button', { name, exact: true }).click();
+    await expect(page.locator('#station-dialog')).toBeVisible({ timeout: 15000 });
+  };
+  await page.screenshot({ path: 'docs/screenshots/station-desktop.png' });
+  await observe('☼ 廢氣／燃燒熱能');
+  await page.screenshot({ path: 'docs/screenshots/station-dialogue-desktop.png' });
+  await page.keyboard.press('Escape');
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem('recyco-legend-v1')!).incineratorNotes,
+    ),
+  ).toEqual([]);
+  await observe('☼ 廢氣／燃燒熱能');
+  await page.getByRole('button', { name: '記下觀察 ✓', exact: true }).click();
+  await page.reload();
+  await page.getByRole('button', { name: '繼續冒險', exact: true }).click();
+  await expect(page.locator('#stage-ui')).toContainText('觀察紀錄 1 / 4');
+  for (const name of ['≈ 廢水', '◇ 底渣', '⋰ 飛灰']) {
+    await observe(name);
+    await page.getByRole('button', { name: '記下觀察 ✓', exact: true }).click();
+  }
+  await expect(page.getByRole('button', { name: '前往克林湖 →', exact: true })).toHaveCount(0);
+  await observe('和工程師阿燦交談');
+  await page.getByRole('button', { name: '燒完之後，所有垃圾都會消失', exact: true }).click();
+  await expect(page.locator('#station-dialog [role=status]')).toContainText('再想想');
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem('recyco-legend-v1')!).visitedIncinerator,
+    ),
+  ).toBe(false);
+  await page.getByRole('button', { name: '燃燒熱能可用於發電，廢氣仍須淨化', exact: true }).click();
+  await expect(page.getByRole('button', { name: '前往克林湖 →', exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem('recyco-legend-v1')!).visitedIncinerator,
+    ),
+  ).toBe(true);
+});
+
+test('station mobile: touch observation and legacy completion preserved', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await checkpoint(page, { scene: 'Incinerator' });
+  await expect(page.locator('#stage-ui')).toContainText('任務完成 ✓');
+  await page.getByRole('button', { name: '≈ 廢水', exact: true }).tap();
+  await expect(page.locator('#station-dialog')).toBeVisible({ timeout: 20000 });
+  expect(
+    await page.locator('#station-dialog').evaluate((e) => e.getBoundingClientRect().width),
+  ).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: 'docs/screenshots/station-dialogue-mobile.png' });
+  await page.getByRole('button', { name: '先離開', exact: true }).tap();
+  await page.locator('#stage').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'docs/screenshots/station-mobile.png' });
+  await page.getByRole('button', { name: '前往克林湖 →', exact: true }).tap();
+  await expect(page.getByRole('heading', { name: '湖中女神的難題', exact: true })).toBeVisible();
+  await context.close();
 });

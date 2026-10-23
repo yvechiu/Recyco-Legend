@@ -1,6 +1,7 @@
 import type { SavedState, SceneId } from '../data/types';
 import { BALANCE } from '../data/balance';
 import { wasteItems } from '../data/wasteItems';
+import { outputPairs } from '../data/quizQuestions';
 import { villageNpcs } from '../data/village';
 export const SAVE_KEY = 'recyco-legend-v1';
 export const freshState = (): SavedState => ({
@@ -11,6 +12,7 @@ export const freshState = (): SavedState => ({
   visitedVillage: false,
   villageTalks: [],
   visitedIncinerator: false,
+  incineratorNotes: [],
   q1: false,
   q2: false,
   unlocked: false,
@@ -94,7 +96,21 @@ export function parseSave(raw: string | null): SavedState {
       s.visitedVillage !== (talks.length === npcIds.length)
     )
       throw Error('Invalid village progress');
-    return { ...freshState(), ...s, villageTalks: talks };
+    const outputIds = outputPairs.map((p) => p.id);
+    const notes =
+      s.incineratorNotes === undefined
+        ? s.visitedIncinerator
+          ? [...outputIds]
+          : []
+        : s.incineratorNotes;
+    if (
+      !Array.isArray(notes) ||
+      !notes.every((id) => outputIds.includes(id)) ||
+      new Set(notes).size !== notes.length ||
+      (s.visitedIncinerator && notes.length !== 4)
+    )
+      throw Error('Invalid observation notes');
+    return { ...freshState(), ...s, villageTalks: talks, incineratorNotes: notes };
   } catch {
     saveStatus = '舊版或損壞的進度已略過，可以安心開始新冒險。';
     return freshState();

@@ -224,7 +224,7 @@ export class WalkingController {
   mountControls(parent: HTMLElement): void {
     const controls = el('div', 'forest-controls'),
       pad = el('div', 'forest-dpad');
-    pad.setAttribute('aria-label', '村落方向鍵');
+    pad.setAttribute('aria-label', '探索方向鍵');
     (['up', 'left', 'down', 'right'] as Direction[]).forEach((d) => {
       const b = el(
         'button',

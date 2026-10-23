@@ -21,6 +21,7 @@ export interface SavedState {
   visitedVillage: boolean;
   villageTalks: VillageNpcId[];
   visitedIncinerator: boolean;
+  incineratorNotes: string[];
   q1: boolean;
   q2: boolean;
   unlocked: boolean;
