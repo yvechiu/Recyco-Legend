@@ -347,12 +347,15 @@ export class ForestCleanup extends AdventureScene {
   private readSign(): void {
     modal(
       '森林告示牌',
-      '方向鍵／WASD：移動\n空白鍵：撿拾附近物品、閱讀路標或查看分類桶。\n\n點選地圖上的物品或下方搜尋按鈕，也能自動走到旁邊撿拾。從背包選好物品，再選高／中／低回收價值桶，勇士會先走到桶旁才投入。\n\n樹木、水池、石頭與分類桶不能穿過。南方箭頭是返回島嶼的出口。',
+      '方向鍵／WASD：移動\n空白鍵：撿拾附近物品、閱讀路標或查看分類桶。\n\n點選地圖上的物品，也能自動走到旁邊撿拾。從背包選好物品，再選高／中／低回收價值桶，勇士會先走到桶旁才投入。\n\n樹木、水池、石頭與分類桶不能穿過。南方箭頭是返回島嶼的出口。',
     );
   }
   private controls(): void {
     const ui = $('#stage-ui'),
       controls = el('div', 'forest-controls');
+    // Phaser also listens on window; DOM controls must not activate the canvas beneath.
+    for (const type of ['touchstart', 'touchmove', 'touchend'])
+      controls.addEventListener(type, (event) => event.stopPropagation());
     const dpad = el('div', 'forest-dpad');
     dpad.setAttribute('aria-label', '森林方向鍵');
     (['up', 'left', 'down', 'right'] as Direction[]).forEach((direction) => {
@@ -430,6 +433,9 @@ export class ForestCleanup extends AdventureScene {
       el('span', 'chip', `已分類 ${state.sorted.length} / 9`),
     );
     $('#stage-ui').append(status);
+    const message = $('#feedback');
+    $('#game-shell').append(message);
+    message.dataset.context = 'forest';
     const panel = $('#panel');
     panel.className = 'cleanup-panel';
     panel.replaceChildren();
@@ -471,7 +477,7 @@ export class ForestCleanup extends AdventureScene {
         titleBlock(
           '出發前的小知識',
           '走進森林，讓回收成為冒險。',
-          '方向鍵移動，空白鍵與附近物品互動。點選地圖物品或下方搜尋按鈕也能自動走過去。手機請用螢幕方向鍵。',
+          '方向鍵移動，空白鍵與附近物品互動。點選地圖上的物品也能自動走過去。手機請用螢幕方向鍵。',
         ),
         el(
           'p',
@@ -495,24 +501,9 @@ export class ForestCleanup extends AdventureScene {
       titleBlock(
         'TOP-DOWN ADVENTURE · 森林探索',
         '走進森林，拾起希望。',
-        '樹木、水池和石頭會擋路。走近垃圾撿進背包，再走到價值桶旁分類。也可以使用下方的自動尋路按鈕。',
+        '樹木、水池和石頭會擋路。走近垃圾撿進背包，再走到價值桶旁分類。也可以直接點選地圖上的垃圾，勇士會自動走近撿拾。',
       ),
     );
-    const remaining = wasteItems.filter((i) => !state.collected.includes(i.id));
-    if (remaining.length) {
-      const search = el('details', 'forest-search');
-      search.open = true;
-      search.append(el('summary', '', `森林裡還有 ${remaining.length} 件物品 · 點選自動前往`));
-      const list = el('div', 'forest-targets');
-      remaining.forEach((item) => {
-        const b = button('', () => this.visitItem(item.id), 'inventory-item');
-        b.setAttribute('aria-label', `撿起${item.name}`);
-        b.append(itemIcon(item.symbol), el('span', '', item.name));
-        list.append(b);
-      });
-      search.append(list);
-      panel.append(search);
-    }
     const head = el('div', 'panel-heading');
     head.append(
       el('h3', '', '勇士背包'),
@@ -529,7 +520,7 @@ export class ForestCleanup extends AdventureScene {
         el(
           'p',
           'inventory-empty',
-          '背包裡暫時沒有物品。走近垃圾按空白鍵，或點選上方物品自動前往。',
+          '背包裡暫時沒有物品。走近垃圾按空白鍵，或直接點選地圖上的垃圾自動前往。',
         ),
       );
     inventory.forEach((item) => {
@@ -538,6 +529,7 @@ export class ForestCleanup extends AdventureScene {
         () => {
           this.destination = null;
           this.selected = item.id;
+          feedback('');
           this.draw();
         },
         'inventory-item',
@@ -547,7 +539,7 @@ export class ForestCleanup extends AdventureScene {
       b.append(itemIcon(item.symbol), el('span', '', item.name));
       pack.append(b);
     });
-    panel.append(pack);
+    panel.append(pack, message);
     const selected = wasteItems.find((i) => i.id === this.selected);
     panel.append(
       el(
@@ -601,9 +593,10 @@ export class ForestCleanup extends AdventureScene {
     feedback(
       correct
         ? `✓ ${item.name}分類成功！本關列為${item.value}回收價值。`
-        : `✕ 扣一條生命。${item.name}仍留在背包。${item.hint}請重新選擇分類桶。`,
+        : `✕ 分類錯誤，扣一條生命。${item.name}仍留在背包，請參考下方提示，重新選擇分類桶。`,
       correct ? 'good' : 'bad',
     );
     this.draw();
+    if (!correct) $('#feedback').scrollIntoView({ block: 'nearest', behavior: 'instant' });
   }
 }

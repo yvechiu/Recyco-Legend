@@ -74,9 +74,39 @@ async function checkpoint(page: Page, overrides: Record<string, unknown> = {}) {
   await page.getByRole('button', { name: '繼續冒險', exact: true }).click();
 }
 async function pickForestItem(page: Page, name: string, touch = false) {
-  const b = page.getByRole('button', { name: `撿起${name}`, exact: true });
-  if (touch) await b.tap();
-  else await b.click();
+  const item = wasteItems.find((i) => i.name === name)!;
+  const stage = page.locator('#stage');
+  await stage.scrollIntoViewIfNeeded();
+  await stage.focus();
+  const from = (await stage.getAttribute('data-player-cell'))!.split(',').map(Number);
+  const path = findPath({ x: from[0], y: from[1] }, adjacentCells(forestItems[item.id]));
+  expect(path).not.toBeNull();
+  let current = { x: from[0], y: from[1] };
+  for (const next of path!) {
+    const key =
+      next.x > current.x
+        ? 'right'
+        : next.x < current.x
+          ? 'left'
+          : next.y > current.y
+            ? 'down'
+            : 'up';
+    if (touch)
+      await page
+        .getByRole('button', {
+          name: `向${{ right: '右', left: '左', down: '下', up: '上' }[key]}移動`,
+          exact: true,
+        })
+        .tap();
+    else
+      await page.keyboard.press(
+        { right: 'ArrowRight', left: 'ArrowLeft', down: 'ArrowDown', up: 'ArrowUp' }[key],
+      );
+    await expect(stage).toHaveAttribute('data-player-cell', `${next.x},${next.y}`);
+    current = next;
+  }
+  if (touch) await page.getByRole('button', { name: '互動 ␣', exact: true }).tap();
+  else await page.keyboard.press('Space');
   await expect(page.getByRole('button', { name: `選取${name}`, exact: true })).toBeVisible({
     timeout: 20000,
   });
@@ -1220,6 +1250,7 @@ test('forest wrong last item stays in backpack after reload until player sorts c
     lives: 3,
   });
   await page.getByRole('button', { name: '已了解，準備好了！' }).click();
+  await expect(page.locator('.forest-search')).toHaveCount(0);
   await page.getByRole('button', { name: '選取口罩', exact: true }).click();
   await wrongForestSort(page, '高');
   await expect(page.getByRole('button', { name: '選取口罩', exact: true })).toHaveAttribute(
@@ -1227,6 +1258,11 @@ test('forest wrong last item stays in backpack after reload until player sorts c
     'true',
   );
   await expect(page.getByRole('status')).toContainText('仍留在背包');
+  expect(
+    await page.locator('#feedback').evaluate((e) => parseFloat(getComputedStyle(e).fontSize)),
+  ).toBeGreaterThanOrEqual(17);
+  await expect(page.locator('#panel #feedback')).toBeVisible();
+  await page.screenshot({ path: 'docs/screenshots/forest-sorting-error-desktop.png' });
   await expect(page.getByRole('heading', { name: '你讓森林重新呼吸了。' })).toHaveCount(0);
   let save = await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!));
   expect(save.sorted).toHaveLength(8);
@@ -1242,6 +1278,9 @@ test('forest wrong last item stays in backpack after reload until player sorts c
   expect(save.sorted).toHaveLength(9);
   expect(save.cleaned).toBe(true);
   expect(save.lives).toBe(2);
+  await page.getByRole('button', { name: '返回地圖', exact: true }).click();
+  await expect(page.locator('#feedback')).toHaveCount(1);
+  await expect(page.locator('#feedback')).not.toHaveAttribute('data-context', 'forest');
 });
 
 test('station complete notes unlock lake without engineer, partial notes explain missing work', async ({

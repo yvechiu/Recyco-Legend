@@ -30,6 +30,9 @@ export function feedback(message: string, kind: 'good' | 'bad' | 'info' = 'info'
   f.textContent = message;
 }
 export function clearUI(title: string, chapter: string, map?: () => void): void {
+  const message = $('#feedback');
+  $('#game-shell').append(message);
+  delete message.dataset.context;
   $('#stage-ui').replaceChildren();
   $('#panel').replaceChildren();
   feedback('');

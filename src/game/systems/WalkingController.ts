@@ -224,6 +224,9 @@ export class WalkingController {
   mountControls(parent: HTMLElement): void {
     const controls = el('div', 'forest-controls'),
       pad = el('div', 'forest-dpad');
+    // Keep overlay touches from reaching Phaser's window touch handlers.
+    for (const type of ['touchstart', 'touchmove', 'touchend'])
+      controls.addEventListener(type, (event) => event.stopPropagation());
     pad.setAttribute('aria-label', '探索方向鍵');
     (['up', 'left', 'down', 'right'] as Direction[]).forEach((d) => {
       const b = el(
