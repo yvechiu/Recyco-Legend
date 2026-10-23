@@ -118,3 +118,7 @@
 本次驗證：正式建置成功；`npm test -- --grep 'lake restoration|complete fresh playthrough|locked map|magic map'` **6 通過、0 失敗**（4.2 分鐘），涵蓋新版完整通關、先備進度、地圖及湖畔互動。最後調整女神圖像混色與玩法說明後再次建置，並執行 `npm test -- --grep 'lake restoration|lake legacy'`：**3 通過、0 失敗**（1.0 分鐘），涵蓋桌面／手機、舊存檔獎勵與未完成焚山的導引。兩輪共驗證 7 個不同測試，未重跑全部 31 項套件。格式與差異空白檢查通過；保留既有 Phaser 共用套件大小提示。
 
 實際截圖：`docs/screenshots/lake-restored-desktop.png`、`lake-device-mobile.png`、`lake-mobile.png`。公開網站需另行執行 GitHub Pages 的手動部署工作流程。
+
+## 女神圖片比例修正
+
+湖畔使用的女神素材為 1920 × 1080 橫幅，原先直接設定成 100 × 130 導致角色被壓窄。現在以 Phaser texture frame 選取角色區域（60, 115, 1050, 890），再以單一 0.16 比例縮放；原始圖片檔案不變。正式建置通過，湖畔手機測試 1 項通過（12.0 秒）；另以桌面實際走至湖畔中央檢視比例、無未捕捉錯誤，截圖為 `docs/screenshots/lake-goddess-proportions.png`。

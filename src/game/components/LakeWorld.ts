@@ -94,10 +94,13 @@ export class LakeWorld {
       );
       this.lamps.set(d.id, scene.add.circle(x + 29, y - 29, 7, 0x837b65).setDepth(y + 40));
     });
+    // The source is a landscape sheet; select the portrait without stretching it.
+    const texture = scene.textures.get('lake-goddess');
+    if (!texture.has('portrait')) texture.add('portrait', 0, 60, 115, 1050, 890);
     const goddess = scene.add
-      .image(9 * t, 4.5 * t, 'lake-goddess')
+      .image(9 * t, 4.5 * t, 'lake-goddess', 'portrait')
       .setBlendMode(Phaser.BlendModes.MULTIPLY)
-      .setDisplaySize(100, 130)
+      .setScale(0.16)
       .setDepth(400);
     scene.add
       .text(9 * t, 5.8 * t, '克林湖女神', {
