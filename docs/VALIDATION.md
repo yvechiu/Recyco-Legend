@@ -93,3 +93,16 @@
 本次實際執行：整輪 `npm test` 為 25 通過、1 失敗（約 11.0 分鐘）。失敗原因是更新測試時誤將地圖按鈕「克林湖」改成場景標題「湖中女神的難題」，已恢復正確按鈕定位。最後重新執行 `npm run build` 成功，再以 `npm test -- --grep 'locked map|station '` 驗證修正項與兩項焚山測試：**3 通過、0 失敗**（48.2 秒）。因此 26 個不同測試均有成功驗證；未宣稱修正後另跑了一輪完整套件。最後格式與差異空白檢查通過。Vite 仍有 Phaser 共用套件超過 500 kB 的既有非阻斷提示。
 
 桌面及手機實際截圖：`docs/screenshots/station-desktop.png`、`station-dialogue-desktop.png`、`station-mobile.png`、`station-dialogue-mobile.png`。公開網站需另行執行 GitHub Pages 的手動部署工作流程。
+
+## 魔法地圖提示與放大更新
+
+- 新增 `MagicMap.ts`，以原圖提供可點擊／鍵盤啟動的放大與縮回；放大後視窗可水平、垂直捲動，手機可觸控查看，維持頁面寬度。
+- 起始時不顯示明文座標；同步移除女神獎勵、入口卡片、圖片替代文字和錯答訊息中的答案。可選擇智者的兩步解圖挑戰，完成後才顯示詳細提示，答錯可重試，中途關閉不取得提示。
+- `mapHintUnlocked` 預設為 false，舊存檔未有此欄位也視為未取得提示，保留原有通關與關卡資格；已取得提示則存檔，重新進入仍可查看。直接讀圖輸入密碼仍然有效，提示任務不是通關必要條件。
+- 新增兩項魔法地圖測試：無提前洩題、錯答不洩題、兩步解鎖、重新讀檔保留、入口通關、桌面點擊縮放與手機觸控縮放／捲動／中途離開。
+
+本次驗證：`npm run build` 成功；`npm test -- --grep 'magic map|complete fresh playthrough|mobile cleanup touch|locked map|corrupt and obsolete'` **6 通過、0 失敗**（4.7 分鐘），涵蓋新地圖、完整新玩家通關、舊手機清理／地圖圖像、先備進度與存檔復原。本次未重跑全部 28 項測試。`npm run format:check` 與 `git diff --check` 通過；保留既有 Phaser 套件大小提示。實際手機截圖：`docs/screenshots/magic-map-mobile.png`、`magic-map-zoom-mobile.png`。
+
+## 遊戲文案去除製作背景
+
+移除遊戲可見的原稿／原企劃稱呼、節錄與改編標記、開發背景說明，包含頁尾、角色圖片替代文字、村民與女神對話、設備說明、分類提示、結局、魔法地圖按鈕。分類與科學提醒及署名保留，來源資料仍記錄於開發文件。正式建置通過；針對資料一致性、村民教學內容與新版地圖操作執行 4 項測試，全部通過（33.7 秒）；格式與差異空白檢查通過。本次未重新跑完整套件。

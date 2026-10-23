@@ -462,8 +462,8 @@ test('mobile cleanup touch targets, backpack, sorting and original clue image', 
     }
   await page.screenshot({ path: '/tmp/recyco-mobile-map.png', fullPage: true });
   await page.getByRole('button', { name: '查看已取得的線索' }).tap();
-  await page.getByRole('button', { name: '展開原稿魔法地圖' }).tap();
-  const image = page.getByRole('img', { name: '原稿魔法地圖：森林星號位於橫軸 160、縱軸 80。' });
+  await page.getByRole('button', { name: '展開魔法地圖' }).tap();
+  const image = page.getByRole('img', { name: '魔法地圖：請觀察森林中的星號與座標格線。' });
   await expect(image).toBeVisible();
   expect(await image.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(
     true,
@@ -523,10 +523,10 @@ test('production assets and original art load from a static deployment subpath',
     expect(background).toContain('/Recyco-Legend/assets/original/heroes.png');
     await page.getByLabel('勇士的名字').fill('子路徑勇士');
     await page.getByRole('button', { name: '開始冒險 →', exact: true }).click();
-    await expect(page.getByRole('img', { name: '原企劃角色：國王溫' })).toBeVisible();
+    await expect(page.getByRole('img', { name: '國王溫' })).toBeVisible();
     expect(
       await page
-        .getByRole('img', { name: '原企劃角色：國王溫' })
+        .getByRole('img', { name: '國王溫' })
         .evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0),
     ).toBe(true);
     expect(failures).toEqual([]);
@@ -972,5 +972,97 @@ test('station mobile: touch observation and legacy completion preserved', async 
   await page.screenshot({ path: 'docs/screenshots/station-mobile.png' });
   await page.getByRole('button', { name: '前往克林湖 →', exact: true }).tap();
   await expect(page.getByRole('heading', { name: '湖中女神的難題', exact: true })).toBeVisible();
+  await context.close();
+});
+
+test('magic map: no early answer, earned hint persists, map zoom and password still work', async ({
+  page,
+}) => {
+  await checkpoint(page, {
+    scene: 'ForestEntrance',
+    unlocked: false,
+    cleaned: false,
+    collected: [],
+    sorted: [],
+  });
+  await expect(page.locator('#panel')).not.toContainText('160');
+  await page.getByLabel('五位數通關密碼').fill('12345');
+  await page.getByRole('button', { name: '解開封印 →', exact: true }).click();
+  await expect(page.getByRole('status')).not.toContainText('160');
+  await page.getByRole('button', { name: '展開魔法地圖' }).click();
+  const dialog = page.locator('#modal');
+  await expect(dialog).not.toContainText('160');
+  const image = dialog.locator('img');
+  const originalWidth = await image.evaluate((e) => e.getBoundingClientRect().width);
+  await page.getByRole('button', { name: '放大魔法地圖', exact: true }).click();
+  await expect(page.getByRole('button', { name: '縮小魔法地圖', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(await image.evaluate((e) => e.getBoundingClientRect().width)).toBeGreaterThan(
+    originalWidth * 2,
+  );
+  await page.getByRole('button', { name: '縮回全圖', exact: true }).click();
+  expect(await image.evaluate((e) => e.getBoundingClientRect().width)).toBeCloseTo(
+    originalWidth,
+    0,
+  );
+  await page.getByRole('button', { name: '請智者協助解圖', exact: true }).click();
+  await page.getByRole('button', { name: '湖泊', exact: true }).click();
+  await expect(dialog).toContainText('密集的樹木');
+  await expect(dialog).not.toContainText('160');
+  await page.getByRole('button', { name: '森林', exact: true }).click();
+  await page.getByRole('button', { name: '把兩個座標相加', exact: true }).click();
+  await expect(dialog).not.toContainText('160');
+  await page.getByRole('button', { name: '先橫軸，再接縱軸', exact: true }).click();
+  await expect(dialog).toContainText('橫軸 160、縱軸 80');
+  await page.getByRole('button', { name: '知道了', exact: true }).click();
+  await expect(page.locator('#panel')).toContainText('橫軸 160、縱軸 80');
+  await page.reload();
+  await page.getByRole('button', { name: '繼續冒險', exact: true }).click();
+  await expect(page.locator('#panel')).toContainText('橫軸 160、縱軸 80');
+  await page.getByLabel('五位數通關密碼').fill('16080');
+  await page.getByRole('button', { name: '解開封印 →', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '走進森林，開始清理 →', exact: true }),
+  ).toBeVisible();
+});
+
+test('magic map mobile: touch zoom, scroll, dismiss challenge without earning hint', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await checkpoint(page, { scene: 'ForestEntrance' });
+  await page.getByRole('button', { name: '展開魔法地圖' }).tap();
+  await page.getByRole('button', { name: '放大魔法地圖', exact: true }).tap();
+  const viewport = page.locator('.magic-map-viewport');
+  expect(await viewport.evaluate((e) => e.scrollWidth > e.clientWidth)).toBe(true);
+  await viewport.evaluate((e) => {
+    e.scrollLeft = 450;
+    e.scrollTop = 150;
+  });
+  expect(await viewport.evaluate((e) => e.scrollLeft)).toBeGreaterThan(0);
+  await page.screenshot({ path: 'docs/screenshots/magic-map-zoom-mobile.png' });
+  await page.getByRole('button', { name: '縮回全圖', exact: true }).tap();
+  expect(await viewport.evaluate((e) => e.scrollLeft)).toBe(0);
+  await page.getByRole('button', { name: '請智者協助解圖', exact: true }).tap();
+  await page.getByRole('button', { name: '森林', exact: true }).tap();
+  await page.getByRole('button', { name: '知道了', exact: true }).tap();
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem('recyco-legend-v1')!).mapHintUnlocked,
+    ),
+  ).toBe(false);
+  await page.getByRole('button', { name: '展開魔法地圖' }).tap();
+  await expect(page.locator('#modal')).not.toContainText('160');
+  await page.screenshot({ path: 'docs/screenshots/magic-map-mobile.png' });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
   await context.close();
 });

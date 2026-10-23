@@ -27,7 +27,7 @@ export function checkFlow(order: string[], branch: string, treatment: string): Q
     correct,
     message: correct
       ? '答對了！先收集，再分類與處理，讓可回收的資源再利用。'
-      : '再想想：先收集 → 分類與處理 → 回收再利用；回收價值不足的廢棄物，原稿送往焚化或掩埋。可以重排再試！',
+      : '再想想：先收集 → 分類與處理 → 回收再利用；回收價值不足的廢棄物，會送往焚化或掩埋。可以重排再試！',
   };
 }
 // Original pairs in PDF p. 13. The source abbreviates energy recovery as 廢氣→發電.
@@ -38,7 +38,7 @@ export const outputPairs = [
     label: '廢氣／燃燒熱能',
     answer: 'energy',
     detail: '燃燒熱能發電；廢氣須淨化',
-    note: '原稿寫「廢氣用於發電」。這裡明確區分：發電利用的是燃燒熱能，不是直接使用廢氣。',
+    note: '發電利用的是燃燒熱能；廢氣必須經過淨化，不能直接排放。',
   },
   {
     id: 'water',
@@ -59,7 +59,7 @@ export const outputPairs = [
     label: '飛灰',
     answer: 'landfill',
     detail: '處理後送去掩埋',
-    note: '依原企劃，飛灰經處理後掩埋。',
+    note: '本關中，飛灰經處理後掩埋。',
   },
 ];
 export const outputOptions = [outputPairs[2], outputPairs[0], outputPairs[3], outputPairs[1]];

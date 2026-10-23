@@ -26,7 +26,7 @@ export const intro = [
   },
 ] as const;
 export const sourceNotice =
-  '本遊戲沿用邱郁棻原企劃的歷史分類資料，並非現行臺灣通用回收指引。回收價值不等於能否回收；日常丟棄請查詢所在地清潔隊公告。所有分類項目仍待環境教育專家複核。';
+  '遊戲中的回收價值與分類是關卡規則，不等於日常生活的回收標準。回收價值不等於能否回收；日常丟棄請查詢所在地清潔隊公告。';
 
 // Adapted village teaching copy, grounded in the PDF; not verbatim dialogue.
 export const villageFacts = [
@@ -36,7 +36,7 @@ export const villageFacts = [
   ],
   [
     '忙碌的回收員',
-    '原企劃中，「回收價值不足」的物品會進入廢棄物處理，送往「焚化或掩埋」。價值低，不代表現實中就不能回收喔！',
+    '在循環島上，「回收價值不足」的物品會進入廢棄物處理，送往「焚化或掩埋」。價值低，不代表現實中就不能回收喔！',
   ],
   [
     '村落的耆老',

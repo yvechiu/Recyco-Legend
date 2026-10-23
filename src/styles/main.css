@@ -2205,3 +2205,40 @@ dialog img {
     font-size: 11px;
   }
 }
+
+.magic-map-viewport {
+  overflow: auto;
+  max-height: 55vh;
+  border: 1px solid #bbcdb8;
+  border-radius: 6px;
+  background: #cce0e7;
+}
+.magic-map-picture.button {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: zoom-in;
+  transform: none;
+}
+.magic-map-viewport.enlarged .magic-map-picture {
+  width: 240%;
+  min-width: 1000px;
+  cursor: zoom-out;
+}
+.magic-map-picture img {
+  max-width: none;
+  border-radius: 0;
+}
+.map-help {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #d7dfc9;
+}
+.map-help h3 {
+  font-size: 17px;
+}

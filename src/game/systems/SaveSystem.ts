@@ -13,6 +13,7 @@ export const freshState = (): SavedState => ({
   villageTalks: [],
   visitedIncinerator: false,
   incineratorNotes: [],
+  mapHintUnlocked: false,
   q1: false,
   q2: false,
   unlocked: false,
@@ -110,7 +111,10 @@ export function parseSave(raw: string | null): SavedState {
       (s.visitedIncinerator && notes.length !== 4)
     )
       throw Error('Invalid observation notes');
-    return { ...freshState(), ...s, villageTalks: talks, incineratorNotes: notes };
+    const mapHintUnlocked = s.mapHintUnlocked ?? false;
+    if (typeof mapHintUnlocked !== 'boolean' || (mapHintUnlocked && !s.q2))
+      throw Error('Invalid map hint');
+    return { ...freshState(), ...s, villageTalks: talks, incineratorNotes: notes, mapHintUnlocked };
   } catch {
     saveStatus = '舊版或損壞的進度已略過，可以安心開始新冒險。';
     return freshState();
@@ -154,7 +158,7 @@ export function objective(): string {
   if (!state.visitedIncinerator) return '前往焚山，了解焚化後的四種產物';
   if (!state.q1 || !state.q2) return '前往克林湖，解開女神的兩道難題';
   if (!state.unlocked) return '拼湊兩個線索，解開廢棄森林入口';
-  if (!state.cleaned) return '撿起九件垃圾，依原企劃的回收價值分類';
+  if (!state.cleaned) return '撿起九件垃圾，依回收價值分類';
   if (state.ending === 'good') return '循環島恢復美麗了！把分類的心意帶回生活';
   return '挑戰廢棄怪！用細分類守護循環島';
 }

@@ -457,7 +457,7 @@ export class ForestCleanup extends AdventureScene {
         titleBlock(
           '任務完成 · 9 / 9',
           '你讓森林重新呼吸了。',
-          '垃圾已經清空！廢棄怪終於現身：「沒想到你竟然找得到我，但你絕對是我的手下敗將！」（原稿）',
+          '垃圾已經清空！廢棄怪終於現身：「沒想到你竟然找得到我，但你絕對是我的手下敗將！」',
         ),
         actions(
           button('準備好了，挑戰廢棄怪 →', () => this.go('BossBattle')),
@@ -476,7 +476,7 @@ export class ForestCleanup extends AdventureScene {
         el(
           'p',
           'item-guidance',
-          '回收價值受材質、分離難度與成本影響，不等於現行回收規則。本關依原企劃分高／中／低。選錯扣一條生命，仍會投入正確桶；三條命耗盡可重試並保留前一任務。',
+          '回收價值受材質、分離難度與成本影響，不等於現行回收規則。本關分為高／中／低三種回收價值。選錯扣一條生命，仍會投入正確桶；三條命耗盡可重試並保留前一任務。',
         ),
         actions(
           button('已了解，準備好了！', () => {
@@ -579,7 +579,7 @@ export class ForestCleanup extends AdventureScene {
       el(
         'p',
         'fine-print',
-        '本關是新增的俯視步行玩法；依原企劃進行價值分類，不代表現行地方回收規則。',
+        '沿著步道探索，撿拾垃圾並依回收價值分類。日常丟棄請依所在地清潔隊公告。',
       ),
     );
     this.updatePrompt();
@@ -598,8 +598,8 @@ export class ForestCleanup extends AdventureScene {
     this.burst(p.x, p.y, correct);
     feedback(
       correct
-        ? `✓ ${item.name}分類成功！原企劃列為${item.value}回收價值。`
-        : `✕ 扣一條生命。原企劃中，${item.name}是${item.value}回收價值；已幫你放進正確的桶。`,
+        ? `✓ ${item.name}分類成功！本關列為${item.value}回收價值。`
+        : `✕ 扣一條生命。在循環島上，${item.name}是${item.value}回收價值；已幫你放進正確的桶。`,
       correct ? 'good' : 'bad',
     );
     this.draw();

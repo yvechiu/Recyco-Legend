@@ -61,10 +61,10 @@ export function art(kind: 'king' | 'sage' | 'goddess' | 'monster', extra = ''): 
   const figure = el('div', `original-art ${kind} ${extra}`);
   const img = el('img');
   img.alt = {
-    king: '原企劃角色：國王溫',
-    sage: '原企劃角色：智者慧',
-    goddess: '原企劃角色：湖中女神',
-    monster: '原企劃角色：廢棄怪',
+    king: '國王溫',
+    sage: '智者慧',
+    goddess: '湖中女神',
+    monster: '廢棄怪',
   }[kind];
   img.src = `${import.meta.env.BASE_URL}assets/original/${kind === 'king' || kind === 'sage' ? 'king-sage' : kind}.png`;
   figure.append(img);
@@ -73,7 +73,7 @@ export function art(kind: 'king' | 'sage' | 'goddess' | 'monster', extra = ''): 
 export function sourceDialog(): void {
   modal(
     '關於這段冒險',
-    `${sourceNotice}\n\n原創企劃：邱郁棻（Yu-Fen Chiu）。角色圖像直接擷取自使用者提供的 22 頁企劃 PDF；場景繪圖、簡化對話、線索呈現與平衡數值為本次網頁實作。原企劃不是已發行的數位遊戲。聲音預設關閉，本版本未附音效。`,
+    `${sourceNotice}\n\n一起守護循環島：先減量、重複使用，再做好分類，讓資源繼續循環。\n\n© 邱郁棻（Yu-Fen Chiu）。聲音預設關閉，本版本未附音效。`,
   );
 }
 export function saveLabel(): HTMLElement {

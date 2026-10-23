@@ -195,7 +195,7 @@ export class Incinerator extends AdventureScene {
       el(
         'p',
         'fine-print',
-        '科學補充：發電利用燃燒熱能，廢氣本身仍須淨化。設備與工程師為本次遊戲改編；底渣、飛灰與廢水的處理須符合當地規範。',
+        '科學補充：發電利用燃燒熱能，廢氣本身仍須淨化。底渣、飛灰與廢水的處理須符合當地規範。',
       ),
     );
     panel.append(

@@ -22,7 +22,7 @@ export class LakeGoddess extends AdventureScene {
     this.matches = {};
     this.setup('湖中女神的難題', '任務一 · 以智慧交換線索', 'lake');
     $('#stage-ui').append(art('goddess'));
-    this.tag('「別再把你們的金銀寶石丟到我家了！」 · 改寫自原稿');
+    this.tag('「別再把你們的金銀寶石丟到我家了！」');
     this.draw();
   }
   private draw(): void {
@@ -113,7 +113,7 @@ export class LakeGoddess extends AdventureScene {
         reason.append(o);
       });
       reasonLabel.append(reason);
-      const treatmentLabel = el('label', '', '原企劃中，廢棄物接著會？');
+      const treatmentLabel = el('label', '', '在循環島上，廢棄物接著會？');
       const treatment = el('select');
       treatment.setAttribute('aria-label', '廢棄物的後續處理');
       flowBranch.treatmentOptions.forEach(([v, t]) => {
@@ -188,11 +188,7 @@ export class LakeGoddess extends AdventureScene {
       });
       panel.append(
         board,
-        el(
-          'p',
-          'fine-print',
-          '科學補充：原稿簡寫為「廢氣發電」；本遊戲以燃燒熱能回收發電、廢氣淨化的概念呈現。',
-        ),
+        el('p', 'fine-print', '科學補充：燃燒熱能可回收發電，廢氣仍須經過淨化處理。'),
       );
       panel.append(
         actions(
@@ -219,8 +215,8 @@ export class LakeGoddess extends AdventureScene {
         'p',
         '',
         n === 1
-          ? '女神：「我說話算話！通關密語是五位數。」（原稿線索）'
-          : '地圖星號位在橫軸 160、縱軸 80。慧的補充提示：先讀橫軸，再接上縱軸，將兩個數字連在一起。',
+          ? '女神：「我說話算話！通關密語是五位數。」'
+          : '女神交給你一張標有星號的魔法地圖。到森林入口展開地圖，試著從格線找出位置；智者也準備了解圖挑戰。',
       ),
     );
     panel.append(card);

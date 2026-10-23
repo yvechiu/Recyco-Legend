@@ -1,13 +1,14 @@
 import { AdventureScene } from './AdventureScene';
 import { $, el, button, titleBlock, actions, feedback } from '../components/UI';
 import { state, persist } from '../systems/SaveSystem';
+import { showMagicMap, mapHint } from '../components/MagicMap';
 export class ForestEntrance extends AdventureScene {
   constructor() {
     super('ForestEntrance');
   }
   create(): void {
     this.setup('廢棄森林入口', '兩個線索 · 一扇魔法之門', 'forest');
-    this.tag('「給了你這兩個線索，應該能找到正確入口了吧？」 · 原稿');
+    this.tag('「給了你這兩個線索，應該能找到正確入口了吧？」');
     this.spawnHero(580, 365);
     const panel = $('#panel');
     panel.className = 'entrance-panel';
@@ -31,30 +32,20 @@ export class ForestEntrance extends AdventureScene {
         'p',
         '',
         state.q2
-          ? '星號位置：橫軸 160，縱軸 80。把兩個數字接在一起。'
+          ? state.mapHintUnlocked
+            ? mapHint
+            : '地圖上有通往森林的星號。展開地圖，試著解讀它的位置；需要協助時可請教智者。'
           : '完成女神的焚化產物配對題。',
       ),
     );
     if (state.q2)
       second.append(
         button(
-          '展開原稿魔法地圖',
-          () => {
-            const body = $('#modal-body');
-            const img = el('img');
-            img.alt = '原稿魔法地圖：森林星號位於橫軸 160、縱軸 80。';
-            img.src = `${import.meta.env.BASE_URL}assets/original/clue-map.png`;
-            body.replaceChildren(
-              el('h2', '', '女神的魔法地圖'),
-              img,
-              el(
-                'p',
-                '',
-                '讀取星號位置：橫軸 160、縱軸 80。將橫軸與縱軸數字相接，符合五位數的第一個線索。',
-              ),
-            );
-            $<HTMLDialogElement>('#modal').showModal();
-          },
+          '展開魔法地圖',
+          () =>
+            showMagicMap(() => {
+              second.querySelector('p')!.textContent = mapHint;
+            }),
           'text small',
         ),
       );
@@ -93,7 +84,12 @@ export class ForestEntrance extends AdventureScene {
         form.remove();
         this.opened(panel);
       } else {
-        feedback('門沒有打開。想一想：橫軸 160 接上縱軸 80，是哪五個數字？', 'bad');
+        feedback(
+          state.mapHintUnlocked
+            ? `門沒有打開。${mapHint}`
+            : '門沒有打開。再看看地圖的星號與格線；需要協助時，可以在地圖中請教智者。',
+          'bad',
+        );
         input.focus();
       }
     });
@@ -101,11 +97,7 @@ export class ForestEntrance extends AdventureScene {
   }
   private opened(panel: HTMLElement): void {
     panel.append(
-      el(
-        'p',
-        'dialogue',
-        '森林深處傳來廢棄怪的聲音：「想打敗我？我看你連找到我都很難吧！」（節錄原稿）',
-      ),
+      el('p', 'dialogue', '森林深處傳來廢棄怪的聲音：「想打敗我？我看你連找到我都很難吧！」'),
       actions(
         button(state.cleaned ? '前往挑戰廢棄怪 →' : '走進森林，開始清理 →', () =>
           this.go(state.cleaned ? 'BossBattle' : 'ForestCleanup'),

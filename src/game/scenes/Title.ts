@@ -42,7 +42,7 @@ export class Title extends AdventureScene {
     label.append(input);
     form.append(label);
     const fieldset = el('fieldset', 'portraits');
-    fieldset.append(el('legend', '', '選擇外觀 · 原企劃角色'));
+    fieldset.append(el('legend', '', '選擇勇士外觀'));
     let choice = state.hero;
     // Appearance labels are new UI copy, not names assigned by the source author.
     const names = ['赤焰勇士', '綠風遊俠', '藍海守衛', '紫月旅人'];

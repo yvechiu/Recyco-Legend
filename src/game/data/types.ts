@@ -22,6 +22,7 @@ export interface SavedState {
   villageTalks: VillageNpcId[];
   visitedIncinerator: boolean;
   incineratorNotes: string[];
+  mapHintUnlocked: boolean;
   q1: boolean;
   q2: boolean;
   unlocked: boolean;
