@@ -5,6 +5,7 @@ export type SceneId =
   | 'Village'
   | 'Incinerator'
   | 'LakeGoddess'
+  | 'LakeRestoration'
   | 'ForestEntrance'
   | 'ForestCleanup'
   | 'BossBattle'
@@ -23,6 +24,7 @@ export interface SavedState {
   visitedIncinerator: boolean;
   incineratorNotes: string[];
   mapHintUnlocked: boolean;
+  lakeRepairs: string[];
   q1: boolean;
   q2: boolean;
   unlocked: boolean;

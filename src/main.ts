@@ -5,6 +5,7 @@ import { Intro } from './game/scenes/Intro';
 import { IslandMap } from './game/scenes/IslandMap';
 import { Village } from './game/scenes/Village';
 import { Incinerator } from './game/scenes/Incinerator';
+import { LakeRestoration } from './game/scenes/LakeRestoration';
 import { LakeGoddess } from './game/scenes/LakeGoddess';
 import { ForestEntrance } from './game/scenes/ForestEntrance';
 import { ForestCleanup } from './game/scenes/ForestCleanup';
@@ -28,6 +29,7 @@ const game = new Phaser.Game({
     Village,
     Incinerator,
     LakeGoddess,
+    LakeRestoration,
     ForestEntrance,
     ForestCleanup,
     BossBattle,
@@ -42,7 +44,7 @@ $('#home').addEventListener('click', () => {
 $('#help').addEventListener('click', () =>
   modal(
     '勇士操作手冊',
-    '① 選擇名字與外觀，聽完國王的委託。\n② 點選地圖進瑞賽可村，用方向鍵／WASD 走近村民，按空白鍵交談。選擇回覆、聽完並記下三份手記，再到焚山走近四個設備、記下觀察，找工程師完成現場任務。\n③ 回答女神的排序題與配對題，取得兩個入口線索。\n④ 森林用方向鍵／WASD 走動，空白鍵互動；手機可用螢幕方向鍵。走近九件垃圾撿拾，選背包物品後走到價值桶旁分類；點物品也能自動尋路。\n⑤ 魔王戰向左滑＝資源回收，向右滑＝一般垃圾；也能使用按鈕或鍵盤 ← →。\n\n所有按鈕都能用 Tab 選取、Enter 或空白鍵操作。沒有答題倒數，不用急！進度保存在這台裝置。',
+    '① 選擇名字與外觀，聽完國王的委託。\n② 點選地圖進瑞賽可村，用方向鍵／WASD 走近村民，按空白鍵交談。選擇回覆、聽完並記下三份手記，再到焚山走近四個設備、記下觀察，找工程師完成現場任務。\n③ 回答女神的排序題，再走進湖畔修復四座循環裝置，取得兩個入口線索。\n④ 森林用方向鍵／WASD 走動，空白鍵互動；手機可用螢幕方向鍵。走近九件垃圾撿拾，選背包物品後走到價值桶旁分類；點物品也能自動尋路。\n⑤ 魔王戰向左滑＝資源回收，向右滑＝一般垃圾；也能使用按鈕或鍵盤 ← →。\n\n所有按鈕都能用 Tab 選取、Enter 或空白鍵操作。沒有答題倒數，不用急！進度保存在這台裝置。',
   ),
 );
 $('#source-note').addEventListener('click', sourceDialog);

@@ -2242,3 +2242,15 @@ dialog img {
 .map-help h3 {
   font-size: 17px;
 }
+
+.lake-materials {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0;
+}
+@media (max-width: 480px) {
+  .lake-materials {
+    grid-template-columns: 1fr;
+  }
+}

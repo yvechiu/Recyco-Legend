@@ -150,16 +150,20 @@ test('complete fresh playthrough, corrective feedback, nine items, boss victory 
   await page.getByRole('button', { name: '請女神看看答案', exact: true }).click();
   await expect(page.getByText('✦ 第一個線索：五位數', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '挑戰第二道難題 →' }).click();
-  await page.getByRole('button', { name: '確認配對', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('還有配對');
-  for (const [label, v] of [
-    ['廢氣／燃燒熱能', 'energy'],
-    ['廢水', 'water'],
-    ['底渣', 'road'],
-    ['飛灰', 'landfill'],
-  ])
-    await page.getByLabel(`${label}的去向`, { exact: true }).selectOption(v);
-  await page.getByRole('button', { name: '確認配對', exact: true }).click();
+  for (const [device, material] of [
+    ['熱能發電機', '燃燒熱能'],
+    ['水處理槽', '廢水'],
+    ['建材處理台', '底渣'],
+    ['飛灰處理站', '飛灰'],
+  ]) {
+    await page.getByRole('button', { name: `操作${device}`, exact: true }).click();
+    await expect(page.locator('#lake-dialog')).toBeVisible({ timeout: 20000 });
+    if (device === '熱能發電機') {
+      await page.getByRole('button', { name: '☁ 送入未淨化的廢氣', exact: true }).click();
+      await expect(page.locator('#lake-dialog [role=status]')).toContainText('淨化');
+    }
+    await page.getByRole('button', { name: new RegExp(`送入${material}$`) }).click();
+  }
   await page.getByRole('button', { name: '前往森林入口 →' }).click();
   await page.getByLabel('五位數通關密碼').fill('12345');
   await page.getByRole('button', { name: '解開封印 →' }).click();
@@ -1064,5 +1068,128 @@ test('magic map mobile: touch zoom, scroll, dismiss challenge without earning hi
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+  await context.close();
+});
+
+test('lake restoration: water collision, proximity, wrong input, partial save and completion', async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await checkpoint(page, {
+    scene: 'LakeRestoration',
+    q2: false,
+    lakeRepairs: [],
+    unlocked: false,
+    cleaned: false,
+    collected: [],
+    sorted: [],
+  });
+  const stage = page.locator('#stage');
+  await stage.scrollIntoViewIfNeeded();
+  await stage.focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(stage).toHaveAttribute('data-player-cell', '8,9');
+  await page.keyboard.press('ArrowUp');
+  await expect(stage).toHaveAttribute('data-player-cell', '8,9');
+  await page.keyboard.press('Space');
+  await expect(page.locator('#lake-dialog')).not.toBeVisible();
+  const open = async (name: string) => {
+    await page.getByRole('button', { name: `操作${name}`, exact: true }).click();
+    await expect(page.locator('#lake-dialog')).toBeVisible({ timeout: 20000 });
+  };
+  await open('熱能發電機');
+  await page.getByRole('button', { name: '☁ 送入未淨化的廢氣', exact: true }).click();
+  await expect(page.locator('#lake-dialog [role=status]')).toContainText('淨化');
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!).lakeRepairs),
+  ).toEqual([]);
+  await page.keyboard.press('Escape');
+  await stage.focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('#lake-dialog')).toBeVisible();
+  await page.getByRole('button', { name: '☼ 送入燃燒熱能', exact: true }).click();
+  await page.reload();
+  await page.getByRole('button', { name: '繼續冒險', exact: true }).click();
+  await expect(page.locator('#stage-ui')).toContainText('循環裝置 1 / 4');
+  await open('熱能發電機');
+  await expect(page.locator('#lake-dialog')).toContainText('燈亮起來');
+  await page.getByRole('button', { name: '先離開裝置', exact: true }).click();
+  for (const [d, m] of [
+    ['水處理槽', '廢水'],
+    ['建材處理台', '底渣'],
+    ['飛灰處理站', '飛灰'],
+  ]) {
+    await open(d);
+    await page.getByRole('button', { name: new RegExp(`送入${m}$`) }).click();
+  }
+  await expect(page.locator('#stage-ui')).toContainText('湖水恢復清澈');
+  await expect(page.getByRole('button', { name: '前往森林入口 →', exact: true })).toBeVisible();
+  await page.locator('#stage').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'docs/screenshots/lake-restored-desktop.png' });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('recyco-legend-v1')!).q2)).toBe(
+    true,
+  );
+  await page.getByRole('button', { name: '① 垃圾的旅程 ✓', exact: true }).click();
+  await expect(page.getByText('✦ 第一個線索：五位數', { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('lake restoration mobile: touch movement, choice and legacy map reward', async ({
+  browser,
+}) => {
+  test.setTimeout(90000);
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await checkpoint(page, {
+    scene: 'LakeRestoration',
+    q2: false,
+    lakeRepairs: [],
+    unlocked: false,
+    cleaned: false,
+    collected: [],
+    sorted: [],
+  });
+  await page.locator('#stage').scrollIntoViewIfNeeded();
+  await page.getByRole('button', { name: '向左移動', exact: true }).tap();
+  await expect(page.locator('#stage')).toHaveAttribute('data-player-cell', '7,10');
+  await page.getByRole('button', { name: '操作水處理槽', exact: true }).tap();
+  await expect(page.locator('#lake-dialog')).toBeVisible({ timeout: 20000 });
+  await page.screenshot({ path: 'docs/screenshots/lake-device-mobile.png' });
+  await page.getByRole('button', { name: '≈ 送入廢水', exact: true }).tap();
+  await expect(page.locator('#stage-ui')).toContainText('循環裝置 1 / 4');
+  await page.screenshot({ path: 'docs/screenshots/lake-mobile.png' });
+  await context.close();
+});
+
+test('lake legacy completion preserves map and missing prerequisite guides to station', async ({
+  page,
+  browser,
+}) => {
+  await checkpoint(page, { scene: 'LakeRestoration' });
+  await expect(page.locator('#stage-ui')).toContainText('循環裝置 4 / 4');
+  await expect(page.getByRole('button', { name: '前往森林入口 →', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '操作熱能發電機', exact: true }).click();
+  await expect(page.locator('#lake-dialog')).toContainText('燈亮起來', { timeout: 15000 });
+  await expect(page.getByRole('button', { name: '☼ 送入燃燒熱能', exact: true })).toHaveCount(0);
+  const context = await browser.newContext();
+  const other = await context.newPage();
+  await checkpoint(other, {
+    scene: 'LakeRestoration',
+    visitedIncinerator: false,
+    q2: false,
+    unlocked: false,
+    cleaned: false,
+    collected: [],
+    sorted: [],
+  });
+  await expect(other.getByRole('button', { name: '前往焚山 →', exact: true })).toBeVisible();
+  await other.getByRole('button', { name: '前往焚山 →', exact: true }).click();
+  await expect(other.getByRole('heading', { name: '焚山觀察站', exact: true })).toBeVisible();
   await context.close();
 });

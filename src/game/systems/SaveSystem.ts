@@ -14,6 +14,7 @@ export const freshState = (): SavedState => ({
   visitedIncinerator: false,
   incineratorNotes: [],
   mapHintUnlocked: false,
+  lakeRepairs: [],
   q1: false,
   q2: false,
   unlocked: false,
@@ -32,6 +33,7 @@ const scenes: SceneId[] = [
   'Village',
   'Incinerator',
   'LakeGoddess',
+  'LakeRestoration',
   'ForestEntrance',
   'ForestCleanup',
   'BossBattle',
@@ -114,7 +116,23 @@ export function parseSave(raw: string | null): SavedState {
     const mapHintUnlocked = s.mapHintUnlocked ?? false;
     if (typeof mapHintUnlocked !== 'boolean' || (mapHintUnlocked && !s.q2))
       throw Error('Invalid map hint');
-    return { ...freshState(), ...s, villageTalks: talks, incineratorNotes: notes, mapHintUnlocked };
+    const repairs = s.lakeRepairs === undefined ? (s.q2 ? [...outputIds] : []) : s.lakeRepairs;
+    if (
+      !Array.isArray(repairs) ||
+      !repairs.every((id) => outputIds.includes(id)) ||
+      new Set(repairs).size !== repairs.length ||
+      s.q2 !== (repairs.length === 4) ||
+      (repairs.length > 0 && !s.visitedIncinerator)
+    )
+      throw Error('Invalid lake repairs');
+    return {
+      ...freshState(),
+      ...s,
+      villageTalks: talks,
+      incineratorNotes: notes,
+      mapHintUnlocked,
+      lakeRepairs: repairs,
+    };
   } catch {
     saveStatus = '舊版或損壞的進度已略過，可以安心開始新冒險。';
     return freshState();

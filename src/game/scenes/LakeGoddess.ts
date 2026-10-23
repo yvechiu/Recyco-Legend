@@ -1,25 +1,16 @@
 import { AdventureScene } from './AdventureScene';
 import { $, el, button, actions, art, titleBlock, feedback } from '../components/UI';
 import { state, persist } from '../systems/SaveSystem';
-import {
-  flowChoices,
-  flowBranch,
-  checkFlow,
-  outputPairs,
-  outputOptions,
-  checkMatches,
-} from '../data/quizQuestions';
+import { flowChoices, flowBranch, checkFlow } from '../data/quizQuestions';
 export class LakeGoddess extends AdventureScene {
   private question: 1 | 2 = 1;
   private order: string[] = [];
-  private matches: Record<string, string> = {};
   constructor() {
     super('LakeGoddess');
   }
-  create(): void {
-    this.question = state.q1 && !state.q2 ? 2 : 1;
+  create(data?: { question?: 1 | 2 }): void {
+    this.question = data?.question ?? (state.q1 && !state.q2 ? 2 : 1);
     this.order = [];
-    this.matches = {};
     this.setup('湖中女神的難題', '任務一 · 以智慧交換線索', 'lake');
     $('#stage-ui').append(art('goddess'));
     this.tag('「別再把你們的金銀寶石丟到我家了！」');
@@ -151,60 +142,18 @@ export class LakeGoddess extends AdventureScene {
       panel.append(
         titleBlock(
           '女神的第二道難題',
-          '焚化後的產物，該去哪裡？',
-          '將四種產物配對到各自的再利用或處理方式。沒有時間限制，錯了可以調整後再試。',
+          '幫女神修復循環裝置。',
+          '走進湖畔，讓四座裝置恢復運轉。沒有時間限制，選錯可以再試。',
         ),
       );
       if (!state.visitedIncinerator) {
         panel.append(
-          el('p', 'fine-print', '女神：「先到焚山看完四種產物的導覽，再來挑戰配對吧！」'),
+          el('p', 'fine-print', '女神：「先到焚山看完四種產物的導覽，再回來修復裝置吧！」'),
           actions(button('前往焚山 →', () => this.go('Incinerator'))),
         );
         return;
       }
-      if (state.q2) {
-        this.reward(panel, 2);
-        return;
-      }
-      const board = el('div', 'match-board');
-      outputPairs.forEach((p) => {
-        const row = el('div', 'match-row');
-        const label = el('label', '', p.label);
-        const select = el('select');
-        select.setAttribute('aria-label', `${p.label}的去向`);
-        const placeholder = el('option', '', '請選擇處理方式');
-        placeholder.value = '';
-        select.append(placeholder);
-        outputOptions.forEach((o) => {
-          const option = el('option', '', o.detail);
-          option.value = o.answer;
-          select.append(option);
-        });
-        select.value = this.matches[p.id] || '';
-        select.addEventListener('change', () => (this.matches[p.id] = select.value));
-        label.append(select);
-        row.append(label);
-        board.append(row);
-      });
-      panel.append(
-        board,
-        el('p', 'fine-print', '科學補充：燃燒熱能可回收發電，廢氣仍須經過淨化處理。'),
-      );
-      panel.append(
-        actions(
-          button('確認配對', () => {
-            const result = checkMatches(this.matches);
-            feedback(result.message, result.correct ? 'good' : 'bad');
-            if (result.correct) {
-              state.q2 = true;
-              persist();
-              this.burst(600, 240);
-              this.draw();
-            }
-          }),
-          button('回焚山複習', () => this.go('Incinerator'), 'light'),
-        ),
-      );
+      this.go('LakeRestoration');
     }
   }
   private reward(panel: HTMLElement, n: 1 | 2): void {
